@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "/home/marco/AndroidStudioProjects/BinderService/app/build/intermediates/res/merged/debug/layout/main.xml",
+        "source": "/home/marco/AndroidStudioProjects/BinderService/app/src/main/res/layout/main.xml"
+    },
+    {
+        "merged": "/home/marco/AndroidStudioProjects/BinderService/app/build/intermediates/res/merged/debug/layout/aidl_activity.xml",
+        "source": "/home/marco/AndroidStudioProjects/BinderService/app/src/main/res/layout/aidl_activity.xml"
+    }
+]
