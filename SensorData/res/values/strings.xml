@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">SensorData</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="accel_button_string">ACCEL</string>
+    <string name="gyro_button_string">GYRO</string>
+    <string name="uncalibrated_gyro_button_string">UNCALI_GYRO</string>
+    <string name="step_counter_button_string">STEP_COUNTER</string>
+    <string name="wakeup_accel_button_string">WAKEUP_ACCEL</string>
+    <string name="wakeup_gyro_button_string">WAKEUP_GYRO</string>
+    <string name="wakeup_uncalibrated_gyro_button_string">WAKEUP_UNCALI_GYRO</string>
+    <string name="wakeup_step_counter_button_string">WAKEUP_STEP_COUNTER</string>
+    <string name="linear_accel_button_string">LINEAR_ACCEL</string>
+    <string name="light_button_string">LIGHT</string>
+    <string name="gravity_button_string">GRAVITY</string>
+    <string name="magnet_button_string">MAGNETIC</string>
+    <string name="motion_button_string">MOTION</string>
+    <string name="game_rotation_button_string">Game Rotatoin</string>
+    <string name="activity_accel_text">ACCEL</string>
+    <string name="activity_gyro_text">GYRO</string>
+    <string name="activity_uncalibrated_gyro_text">UNCALI_GYRO</string>
+    <string name="activity_step_counter_text">STEP_COUNTER</string>
+    <string name="activity_linear_accel_text">LINEAR_ACCEL</string>
+    <string name="activity_light_text">LIGHT</string>
+    <string name="activity_wakeup_accel_text">WAKEUP_ACCEL</string>
+    <string name="activity_wakeup_gyro_text">WAKEUP_GYRO</string>
+    <string name="activity_wakeup_uncalibrated_gyro_text">WAKEUP_UNCALI_GYRO</string>
+    <string name="activity_wakeup_step_counter_text">WAKEUP_STEP_COUNTER</string>
+    <string name="activity_gravity_text">GRAVITY</string>
+    <string name="activity_magnet_text">MAGNETIC</string>
+    <string name="activity_motion_text">MOTION</string>
+    <string name="activity_game_rotation_text">Game Rotation</string>
+
+</resources>

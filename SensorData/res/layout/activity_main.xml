@@ -1,0 +1,101 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.example.sensordata.MainActivity" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <Button
+            android:id="@+id/accel_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/accel_button_string" />
+
+        <Button
+            android:id="@+id/gyro_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/gyro_button_string" />
+
+        <Button
+            android:id="@+id/uncalibrated_gyro_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/uncalibrated_gyro_button_string" />
+
+        <Button
+            android:id="@+id/step_counter_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/step_counter_button_string" />
+
+        <Button
+            android:id="@+id/wakeup_accel_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/wakeup_accel_button_string" />
+
+        <Button
+            android:id="@+id/wakeup_gyro_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/wakeup_gyro_button_string" />
+
+        <Button
+            android:id="@+id/wakeup_uncalibrated_gyro_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/wakeup_uncalibrated_gyro_button_string" />
+
+        <Button
+            android:id="@+id/wakeup_step_counter_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/wakeup_step_counter_button_string" />
+
+        <Button
+            android:id="@+id/linear_accel_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/linear_accel_button_string" />
+
+        <Button
+            android:id="@+id/light_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/light_button_string" />
+
+        <Button
+            android:id="@+id/gravity_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/gravity_button_string" />
+
+        <Button
+            android:id="@+id/magnet_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/magnet_button_string" />
+
+        <Button
+            android:id="@+id/motion_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/motion_button_string" />
+
+        <Button
+            android:id="@+id/game_rotation_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/game_rotation_button_string" />
+    </LinearLayout>
+
+</ScrollView>
