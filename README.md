@@ -1,4 +1,6 @@
 # apks
 
-Android application utils
+Android application utils.
+
 For diverse Android application.
+
