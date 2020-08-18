@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -36,7 +37,7 @@ public class BatteryView extends View {
         int battery_head_width = 6;
         int battery_head_height = 10;
 
-        int battery_inside_margin = 4;
+        int battery_inside_margin = 3;
 
         // Draw battery cover
         Paint batteryCoverPaint = new Paint();
@@ -44,9 +45,12 @@ public class BatteryView extends View {
         batteryCoverPaint.setAntiAlias(true);
         batteryCoverPaint.setStyle(Style.STROKE);
         batteryCoverPaint.setStrokeWidth(3);        // set the width of paint brush
-        Rect rect = new Rect(battery_left, battery_top,
+//        Rect rect = new Rect(battery_left, battery_top,
+//                battery_left + battery_width, battery_top + battery_height);
+//        canvas.drawRect(rect, batteryCoverPaint);
+        RectF rect = new RectF(battery_left, battery_top,
                 battery_left + battery_width, battery_top + battery_height);
-        canvas.drawRect(rect, batteryCoverPaint);
+        canvas.drawRoundRect(rect, 10f, 10f, batteryCoverPaint);
 
         // Draw battery head
         Paint batteryHeadPaint = new Paint();
@@ -56,8 +60,10 @@ public class BatteryView extends View {
         int h_top = battery_top + battery_height / 2 - battery_head_height / 2;
         int h_right = h_left + battery_head_width;
         int h_bottom = h_top + battery_head_height;
-        Rect headRect = new Rect(h_left, h_top, h_right, h_bottom);
-        canvas.drawRect(headRect, batteryHeadPaint);
+//        Rect headRect = new Rect(h_left, h_top, h_right, h_bottom);
+//        canvas.drawRect(headRect, batteryHeadPaint);
+        RectF headRect = new RectF(h_left, h_top, h_right, h_bottom);
+        canvas.drawRoundRect(headRect, 1f, 1f, batteryHeadPaint);
 
         // Draw battery core
         float powerPercent = mPower / 100.0f;
@@ -70,8 +76,10 @@ public class BatteryView extends View {
             int p_right = p_left - battery_inside_margin + (int) ((battery_width - battery_inside_margin) * powerPercent);
             int p_bottom = p_top + battery_height - battery_inside_margin * 2;
             Log.i("marcoo", "value=" + p_left + ", " + p_top + ", " + p_right + ", " + p_bottom + ".");
-            Rect coreRect = new Rect(p_left, p_top, p_right, p_bottom);
-            canvas.drawRect(coreRect, batteryCorePaint);
+//            Rect coreRect = new Rect(p_left, p_top, p_right, p_bottom);
+//            canvas.drawRect(coreRect, batteryCorePaint);
+            RectF coreRect = new RectF(p_left, p_top, p_right, p_bottom);
+            canvas.drawRoundRect(coreRect, 8f, 8f, batteryCorePaint);
         }
     }
 
