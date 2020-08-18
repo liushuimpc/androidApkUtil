@@ -35,20 +35,22 @@ public class BatteryView extends View {
 
         int battery_head_width = 6;
         int battery_head_height = 10;
-        int battery_inside_margin = 2;
+
+        int battery_inside_margin = 4;
 
         // Draw battery cover
-        Paint paint = new Paint();
-        paint.setColor(Color.BLACK);
-        paint.setAntiAlias(true);
-        paint.setStyle(Style.STROKE);
+        Paint batteryCoverPaint = new Paint();
+        batteryCoverPaint.setColor(Color.WHITE);
+        batteryCoverPaint.setAntiAlias(true);
+        batteryCoverPaint.setStyle(Style.STROKE);
+        batteryCoverPaint.setStrokeWidth(3);        // set the width of paint brush
         Rect rect = new Rect(battery_left, battery_top,
                 battery_left + battery_width, battery_top + battery_height);
-        canvas.drawRect(rect, paint);
+        canvas.drawRect(rect, batteryCoverPaint);
 
         // Draw battery head
-        Paint batteryHeadPaint = new Paint(paint);
-        batteryHeadPaint.setColor(Color.BLACK);
+        Paint batteryHeadPaint = new Paint();
+        batteryHeadPaint.setColor(Color.WHITE);
         batteryHeadPaint.setStyle(Style.FILL_AND_STROKE);
         int h_left = battery_left + battery_width;
         int h_top = battery_top + battery_height / 2 - battery_head_height / 2;
@@ -59,7 +61,7 @@ public class BatteryView extends View {
 
         // Draw battery core
         float powerPercent = mPower / 100.0f;
-        Paint batteryCorePaint = new Paint(paint);
+        Paint batteryCorePaint = new Paint();
         batteryCorePaint.setColor(Color.BLUE);
         batteryCorePaint.setStyle(Style.FILL);
         if (powerPercent > 0 && powerPercent <= BATTERY_SCALE) {

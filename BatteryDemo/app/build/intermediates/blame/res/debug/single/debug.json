@@ -1,22 +1,22 @@
 [
     {
-        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/res/merged/debug/menu_main.xml.flat",
-        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/src/main/res/menu/main.xml"
+        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/res/merged/debug/drawable-xhdpi_ic_launcher.png.flat",
+        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/src/main/res/drawable-xhdpi/ic_launcher.png"
     },
     {
-        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/res/merged/debug/drawable-mdpi_ic_launcher.png.flat",
-        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/src/main/res/drawable-mdpi/ic_launcher.png"
+        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/res/merged/debug/drawable-hdpi_ic_launcher.png.flat",
+        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/src/main/res/drawable-hdpi/ic_launcher.png"
     },
     {
-        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/res/merged/debug/layout_activity_main.xml.flat",
-        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/src/main/res/layout/activity_main.xml"
+        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/res/merged/debug/layout_activity_main.xml.flat",
+        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/src/main/res/layout/activity_main.xml"
     },
     {
-        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/res/merged/debug/drawable-xhdpi_ic_launcher.png.flat",
-        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/src/main/res/drawable-xhdpi/ic_launcher.png"
+        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/res/merged/debug/menu_main.xml.flat",
+        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/src/main/res/menu/main.xml"
     },
     {
-        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/res/merged/debug/drawable-hdpi_ic_launcher.png.flat",
-        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/src/main/res/drawable-hdpi/ic_launcher.png"
+        "merged": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/res/merged/debug/drawable-mdpi_ic_launcher.png.flat",
+        "source": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/src/main/res/drawable-mdpi/ic_launcher.png"
     }
 ]

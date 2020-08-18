@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/incremental/mergeDebugResources/merged.dir/values-v11/values-v11.xml",
+            "outputFile": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/incremental/mergeDebugResources/merged.dir/values-v11/values-v11.xml",
             "map": [
                 {
-                    "source": "/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/src/main/res/values-v11/styles.xml",
+                    "source": "/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/src/main/res/values-v11/styles.xml",
                     "from": {
                         "startLines": "6",
                         "startColumns": "4",

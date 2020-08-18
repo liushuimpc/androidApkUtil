@@ -1,4 +1,4 @@
-#Tue Aug 18 14:11:20 HKT 2020
-base.0=/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/BatteryDemo/app/build/intermediates/dex/debug/mergeDexDebug/out/classes.dex
+#Tue Aug 18 14:54:15 HKT 2020
+base.0=/home/marco/Downloads/Learn/personal_work/gitlab/androidApkUtils/apks/BatteryDemo/app/build/intermediates/dex/debug/mergeProjectDexDebug/out/classes.dex
 path.0=classes.dex
 renamed.0=classes.dex
