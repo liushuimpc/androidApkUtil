@@ -1,0 +1,7 @@
+#Wed Aug 19 11:14:56 HKT 2020
+base.0=/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/ChargingAnimation1/app/build/intermediates/dex/debug/mergeExtDexDebug/out/classes.dex
+path.1=classes.dex
+renamed.1=classes2.dex
+path.0=classes.dex
+renamed.0=classes.dex
+base.1=/home/marco/Downloads/Learn/personal_work/gitlab/download-codes/ChargingAnimation1/app/build/intermediates/dex/debug/mergeProjectDexDebug/out/classes.dex
