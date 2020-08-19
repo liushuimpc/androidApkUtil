@@ -20,7 +20,7 @@ public class RunningView extends View {
 
     private void init() {
         paint = new Paint();
-        bitmap = BitmapFactory.decodeResource(this.getResources(), R.drawable.running_view);
+        bitmap = BitmapFactory.decodeResource(this.getResources(), R.drawable.run);
     }
 
     @Override
