@@ -40,6 +40,7 @@ Example: AndroidManifest.xml part in MANIFEST.MF.
 
 Note: below 3 lines are ASCII text, with CRLF(\r\n) line terminators.
 
+==== File name: CERT.SF ====
 Line1	Name: AndroidManifest.xml
 Line2	SHA-256-Digest: JuhNmIbD2j51JYBib3XjukcEqsAQ/99zSchelsUbzIc=
 Line3	
@@ -71,6 +72,7 @@ CERT.SF: Calculate the hash digest of whole MANIFEST.MF.
 -----------------------------------------------------------------
 Example in CERT.SF:
 
+==== File name: MANIFEST.MF ====
 SHA-256-Digest-Manifest: yx7SikZYrD8YHUtNjVswz8pylXwwWqObyIQrb652oeo=
 
 -----------------------------------------------------------------
