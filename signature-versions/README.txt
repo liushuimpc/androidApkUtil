@@ -1,3 +1,5 @@
+See more in https://blog.csdn.net/liushuimpc/article/details/109329754
+
 Below data are based on signature-versions/v1 at https://gitlab.com/androidapkutils/apks/-/tree/master/signature-versions/v1.
 
 ####################       Topic 1       ########################
