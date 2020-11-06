@@ -90,3 +90,12 @@ yx7SikZYrD8YHUtNjVswz8pylXwwWqObyIQrb652oeo=
 
 
 
+
+####################       Topic 4       ########################
+CERT.RSA
+- show information from CERT.RSA
+
+$ openssl asn1parse -inform DER -in CERT.RSA -dump
+
+
+
