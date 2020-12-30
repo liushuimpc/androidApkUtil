@@ -17,7 +17,6 @@ public class TmpActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tmp);
 
-        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.tmp);
         Intent intent = getIntent();
         int flag = intent.getIntExtra("flag",0);
         Log.i(TAG, "flag=" + flag);
