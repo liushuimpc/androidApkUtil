@@ -9,20 +9,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-/*
-
-protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_show_bigfragment);
-    frament_contant = (LinearLayout) findViewById(R.id.frament_contant);
-    Intent intent=getIntent();
-    int bigMake=intent.getIntExtra("bigMake",0);
-    BigMakeFragment bigMakeFragment=new BigMakeFragment();
-    FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-    transaction.replace(R.id.frament_contant,bigMakeFragment).commit();
-}
-*/
-
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link FirstFragment#newInstance} factory method to
@@ -70,13 +56,6 @@ public class FirstFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-/*        frament_contant = (LinearLayout) findViewById(R.id.frament_contant);
-        Intent intent=getIntent();
-        int bigMake=intent.getIntExtra("bigMake",0);
-        BigMakeFragment bigMakeFragment=new BigMakeFragment();
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.frament_contant,bigMakeFragment).commit();*/
     }
 
     @Override
