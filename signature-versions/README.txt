@@ -97,5 +97,6 @@ CERT.RSA
 
 $ openssl asn1parse -inform DER -in CERT.RSA -dump
 
+$ openssl pkcs7 -inform DER -in CERT.RSA -text -noout -print_certs
 
-
+$ openssl pkcs7 -in CERT.RSA -inform DER -out cert.pem
