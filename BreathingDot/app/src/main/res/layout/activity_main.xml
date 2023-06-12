@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/breath"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Breath" />
+
+    <ImageView
+        android:id="@+id/img_view_redpoint"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="left"
+        android:layout_marginTop="30dp"
+        android:src="@drawable/redpoint" />
+
+    <Button
+        android:id="@+id/alpha"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alpha" />
+
+    <ImageView
+        android:id="@+id/img_view_alphapoint"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="left"
+        android:layout_marginTop="30dp"
+        android:src="@drawable/alphapoint" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>
