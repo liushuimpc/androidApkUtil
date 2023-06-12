@@ -18,7 +18,7 @@ public class TmpActivity extends AppCompatActivity {
         setContentView(R.layout.activity_tmp);
 
         Intent intent = getIntent();
-        int flag = intent.getIntExtra("flag",0);
+        int flag = intent.getIntExtra("flag", 0);
         Log.i(TAG, "flag=" + flag);
         FirstFragment firstFragment = new FirstFragment();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
