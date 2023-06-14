@@ -5,43 +5,58 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/design_default_color_secondary_variant">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_marginTop="50dp"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/size_breath"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Size Breath" />
 
-    <Button
-        android:id="@+id/breath"
-        android:layout_width="wrap_content"
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/alpha_breath"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Alpha Breath" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Breath" />
+        android:orientation="horizontal">
+        <ImageView
+            android:id="@+id/img_view_size_breath"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="30dp"
+            android:layout_marginStart="30dp"
+            android:src="@drawable/size_breath" />
 
-    <ImageView
-        android:id="@+id/img_view_redpoint"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_gravity="left"
-        android:layout_marginTop="30dp"
-        android:src="@drawable/redpoint" />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-    <Button
-        android:id="@+id/alpha"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Alpha" />
-
-    <ImageView
-        android:id="@+id/img_view_alphapoint"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_gravity="left"
-        android:layout_marginTop="30dp"
-        android:src="@drawable/alphapoint" />
+        <ImageView
+            android:id="@+id/img_view_alpha_breath"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="30dp"
+            android:layout_marginEnd="30dp"
+            android:src="@drawable/alpha_breath" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
 </androidx.appcompat.widget.LinearLayoutCompat>

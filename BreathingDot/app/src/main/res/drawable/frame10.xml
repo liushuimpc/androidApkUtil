@@ -4,6 +4,6 @@ android:shape="oval"
 android:useLevel="false">
     <solid android:color="@color/red" />
     <stroke
-        android:width="6dp"
-        android:color="@color/white" />
+        android:width="0dp"
+        android:color="@color/crystal" />
 </shape>

@@ -1,10 +1,11 @@
 package com.example.breathingdot;
 
+import static com.example.breathingdot.AlphaBreath.MAX_TIME_COUNTER;
+import static com.example.breathingdot.AlphaBreath.MIN_TIME_COUNTER;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.annotation.SuppressLint;
-import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -14,34 +15,27 @@ import android.widget.Button;
 import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "BreathingDot";
-    private static final int MSG_START_BREATHING = 1001;
-    private static final int MSG_STOP_BREATHING = 1002;
+    public static final int MSG_START_SIZE_BREATH = 1001;
+    public static final int MSG_STOP_SIZE_BREATH = 1002;
 
-    private static final int MSG_START_ALPHA_BREATH = 2001;
-    private static final int MSG_STOP_ALPHA_BREATH = 2002;
+    public static final int MSG_START_ALPHA_BREATH = 2001;
+    public static final int MSG_DARKEN_ALPHA_BREATH = 2002;
+    public static final int MSG_STOP_ALPHA_BREATH = 2003;
 
-    private Button breathButton;
-    private static ImageView imageView;
-    private static AnimationDrawable animationDrawable;
+    private static SizeBreath sizeBreath;
+    private static ImageView sizeImageView;
+    private Button sizeButton;
 
-    private Button alphaButton;
+    private static AlphaBreath alphaBreath;
     private static ImageView alphaImageView;
-    private static AnimationDrawable alphaAnimationDrawable;
-    private static int timeCounter = 0;
-    private static final int MAX_ALPHA_VALUE = 255;
-    private static final int MAX_TIME_COUNTER = 20;
-    private static final int GRADIENT_DURATION = 700; // milliseconds
+    private Button alphaButton;
 
-    private static Thread alphaThread;
     private static MyHandler handler;
 
     private static class MyHandler extends Handler {
-
         private WeakReference<MainActivity> mWeakReference;
         private String TAG = "MyHandler";
 
@@ -51,35 +45,40 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void handleMessage(@NonNull Message msg) {
+            Log.i(TAG, "handleMessage, msg.what=" + msg.what);
             super.handleMessage(msg);
+
             switch (msg.what) {
-                case MSG_START_BREATHING:
-                    Log.i(TAG, "MSG_START_BREATHING");
-                    startBreathing();
+                case MSG_START_SIZE_BREATH:
+                    sizeBreath.startSizeBreath();
                     break;
 
-                case MSG_STOP_BREATHING:
-                    Log.i(TAG, "MSG_STOP_BREATHING");
-                    stopBreathing();
+                case MSG_STOP_SIZE_BREATH:
+                    sizeBreath.stopSizeBreath();
                     break;
 
                 case MSG_START_ALPHA_BREATH:
-                    int count = msg.arg1;
-                    Log.i(TAG, "MSG_START_ALPHA_BREATH, msg.arg1=" + count);
-                    if (count == MAX_TIME_COUNTER) {
-                        Log.i(TAG, "MSG_START_ALPHA_BREATH if");
-                        timeCounter = 0;
-                        stopAlphaBreath();
-
+                    int counter = msg.arg1;
+                    Log.i(TAG, "MSG_START_ALPHA_BREATH, msg.arg1=" + counter);
+                    if (counter == MAX_TIME_COUNTER) {
+                        handler.obtainMessage(MSG_DARKEN_ALPHA_BREATH, counter, 0).sendToTarget();
                     } else {
-                        Log.i(TAG, "MSG_START_ALPHA_BREATH count=" + count);
-                        startAlphaBreath(count);
+                        alphaBreath.startAlphaBreath(counter);
+                    }
+                    break;
+
+                case MSG_DARKEN_ALPHA_BREATH:
+                    int darkenCounter = msg.arg1;
+                    Log.i(TAG, "MSG_DARKEN_ALPHA_BREATH, msg.arg1=" + darkenCounter);
+                    if (darkenCounter == MIN_TIME_COUNTER) {
+                        alphaBreath.stopAlphaBreath();
+                    } else {
+                        alphaBreath.darkenAlphaBreath(darkenCounter);
                     }
                     break;
 
                 case MSG_STOP_ALPHA_BREATH:
-                    Log.i(TAG, "MSG_STOP_ALPHA_BREATH");
-                    stopAlphaBreath();
+                    alphaBreath.stopAlphaBreath();
                     break;
 
                 default:
@@ -94,86 +93,51 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         getViews();
-        getMyHandler(this);
-    }
-
-    private void getMyHandler(MainActivity activity) {
-        handler = new MyHandler(activity);
+        initValuables();
     }
 
     private void getViews() {
-        breathButton = findViewById(R.id.breath);
-        breathButton.setOnClickListener(new View.OnClickListener() {
+        getSizeBreathViews();
+        getAlphaBreathViews();
+    }
+
+    private void initValuables() {
+        getMyHandler();
+        sizeBreath = new SizeBreath(handler, sizeImageView);
+        alphaBreath = new AlphaBreath(handler, alphaImageView);
+    }
+
+    private Handler getMyHandler() {
+        if (handler == null) {
+            handler = new MyHandler(this);
+        }
+        return handler;
+    }
+
+    private void getSizeBreathViews() {
+        sizeButton = findViewById(R.id.size_breath);
+        sizeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                handler.obtainMessage(MSG_START_BREATHING).sendToTarget();
+                handler.obtainMessage(MSG_START_SIZE_BREATH).sendToTarget();
             }
         });
-        imageView = findViewById(R.id.img_view_redpoint);
-        imageView.setImageDrawable(getDrawable(R.drawable.redpoint));
-        imageView.setImageAlpha(120);
-        imageView.setVisibility(View.GONE);
-        animationDrawable = (AnimationDrawable) imageView.getDrawable();
+        sizeImageView = findViewById(R.id.img_view_size_breath);
+        sizeImageView.setImageDrawable(getDrawable(R.drawable.size_breath));
+        sizeImageView.setVisibility(View.GONE);
+    }
 
-        alphaButton = findViewById(R.id.alpha);
+    private void getAlphaBreathViews() {
+        alphaButton = findViewById(R.id.alpha_breath);
         alphaButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                handler.obtainMessage(MSG_START_ALPHA_BREATH).sendToTarget();
+                Log.i(TAG, "alphaButton clicked");
+                handler.obtainMessage(MSG_START_ALPHA_BREATH, 0, 0).sendToTarget();
             }
         });
-        alphaImageView = findViewById(R.id.img_view_alphapoint);
-        alphaImageView.setImageDrawable(getDrawable(R.drawable.alphapoint));
-        alphaImageView.setVisibility(View.GONE);
-        alphaAnimationDrawable = (AnimationDrawable) alphaImageView.getDrawable();
-    }
-
-    private static void startBreathing() {
-        Log.i(TAG, "startBreathing");
-//        animationDrawable.setOneShot(true);
-        imageView.setVisibility(View.VISIBLE);
-        animationDrawable.start();
-        scheduleStopDrawable(animationDrawable);
-    }
-
-    private static void stopBreathing() {
-        Log.i(TAG, "stopBreathing");
-        if (animationDrawable.isRunning()) {
-            imageView.setVisibility(View.GONE);
-            animationDrawable.stop();
-        }
-    }
-
-    private static void scheduleStopDrawable(AnimationDrawable drawable) {
-        Timer timer = new Timer("draw");
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                handler.obtainMessage(MSG_STOP_BREATHING).sendToTarget();
-            }
-        }, 1000);
-    }
-
-    private static void startAlphaBreath(int timeCounter) {
-        Log.i(TAG, "timeCounter=" + timeCounter);
-
-        int value = MAX_ALPHA_VALUE * timeCounter / MAX_TIME_COUNTER;
-        alphaImageView.setVisibility(View.VISIBLE);
-        alphaImageView.setImageAlpha(value);
-
-        Timer timer = new Timer("alphaTimer");
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                int value = timeCounter + 1;
-                Log.i("MyThread", "timecounter=" + timeCounter + ", value=" + value);
-                handler.obtainMessage(MSG_START_ALPHA_BREATH, value, 0).sendToTarget();
-            }
-        }, GRADIENT_DURATION / MAX_TIME_COUNTER);
-    }
-
-    private static void stopAlphaBreath() {
-        Log.i(TAG, "stopAlphaBreath");
+        alphaImageView = findViewById(R.id.img_view_alpha_breath);
+        alphaImageView.setImageDrawable(getDrawable(R.drawable.alpha_breath));
         alphaImageView.setVisibility(View.GONE);
     }
 }
