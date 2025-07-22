@@ -1,0 +1,13 @@
+package android.hardware.test@1.0;
+
+import ITestCallback;
+
+interface ITest {
+    init(TestID id);
+
+    helloWorld(string name) generates (string result);
+
+    setCallback(ITestCallback callback) generates (bool res);
+
+    release();
+};

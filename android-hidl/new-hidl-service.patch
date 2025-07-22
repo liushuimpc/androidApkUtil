@@ -1,0 +1,532 @@
+diff --git a/build/make/target/product/vndk/28.txt b/build/make/target/product/vndk/28.txt
+index 712e91c587..4d74eaf258 100644
+--- a/build/make/target/product/vndk/28.txt
++++ b/build/make/target/product/vndk/28.txt
+@@ -124,6 +124,7 @@ VNDK-core: android.hardware.sensors@1.0.so
+ VNDK-core: android.hardware.soundtrigger@2.0.so
+ VNDK-core: android.hardware.soundtrigger@2.0-core.so
+ VNDK-core: android.hardware.soundtrigger@2.1.so
++VNDK-core: android.hardware.test@1.0.so
+ VNDK-core: android.hardware.tetheroffload.config@1.0.so
+ VNDK-core: android.hardware.tetheroffload.control@1.0.so
+ VNDK-core: android.hardware.thermal@1.0.so
+diff --git a/build/make/target/product/vndk/current.txt b/build/make/target/product/vndk/current.txt
+index 712e91c587..4d74eaf258 100644
+--- a/build/make/target/product/vndk/current.txt
++++ b/build/make/target/product/vndk/current.txt
+@@ -124,6 +124,7 @@ VNDK-core: android.hardware.sensors@1.0.so
+ VNDK-core: android.hardware.soundtrigger@2.0.so
+ VNDK-core: android.hardware.soundtrigger@2.0-core.so
+ VNDK-core: android.hardware.soundtrigger@2.1.so
++VNDK-core: android.hardware.test@1.0.so
+ VNDK-core: android.hardware.tetheroffload.config@1.0.so
+ VNDK-core: android.hardware.tetheroffload.control@1.0.so
+ VNDK-core: android.hardware.thermal@1.0.so
+diff --git a/device/mediatek/mt6765/manifest.xml b/device/mediatek/mt6765/manifest.xml
+index a828571a0a..6f346adb7a 100644
+--- a/device/mediatek/mt6765/manifest.xml
++++ b/device/mediatek/mt6765/manifest.xml
+@@ -294,4 +294,13 @@
+             <instance>default</instance>
+         </interface>
+     </hal>
++    <hal format="hidl">
++        <name>android.hardware.test</name>
++        <transport>hwbinder</transport>
++        <version>1.0</version>
++        <interface>
++            <name>ITest</name>
++            <instance>default</instance>
++        </interface>
++    </hal>
+ </manifest>
+diff --git a/device/mediatek/sepolicy/basic/non_plat/file_contexts b/device/mediatek/sepolicy/basic/non_plat/file_contexts
+index 73e2a612cb..3e8ae77d4a 100644
+--- a/device/mediatek/sepolicy/basic/non_plat/file_contexts
++++ b/device/mediatek/sepolicy/basic/non_plat/file_contexts
+@@ -571,6 +571,7 @@
+ /(system\/vendor|vendor)/bin/hw/camerahalserver u:object_r:mtk_hal_camera_exec:s0
+ /(system\/vendor|vendor)/bin/hw/vendor\.mediatek\.hardware\.imsa@1\.0-service u:object_r:mtk_hal_imsa_exec:s0
+ /(system\/vendor|vendor)/bin/hw/vendor\.mediatek\.hardware\.omadm@1\.0-service u:object_r:mtk_hal_omadm_exec:s0
++/(system\/vendor|vendor)/bin/hw/android\.hardware\.test@1\.0-service u:object_r:hal_test_default_exec:s0
+ 
+ # Google Trusty system files
+ /(vendor|system\/vendor)/bin/hw/android\.hardware\.keymaster@3\.0-service\.trusty u:object_r:hal_keymaster_default_exec:s0
+diff --git a/device/mediatek/sepolicy/basic/private/compat/26.0/26.0.ignore.cil b/device/mediatek/sepolicy/basic/private/compat/26.0/26.0.ignore.cil
+index 560339e3d3..10bb6e52ab 100755
+--- a/device/mediatek/sepolicy/basic/private/compat/26.0/26.0.ignore.cil
++++ b/device/mediatek/sepolicy/basic/private/compat/26.0/26.0.ignore.cil
+@@ -28,6 +28,7 @@
+     mtkbootanimation
+     mtkbootanimation_exec
+     mtkbootanimation_tmpfs
++    test_service
+ ))
+ 
+ ;; private_objects - a collection of types that were labeled differently in
+diff --git a/device/mediatek/sepolicy/bsp/non_plat/system_server.te b/device/mediatek/sepolicy/bsp/non_plat/system_server.te
+index dd069312be..3971feeedf 100644
+--- a/device/mediatek/sepolicy/bsp/non_plat/system_server.te
++++ b/device/mediatek/sepolicy/bsp/non_plat/system_server.te
+@@ -225,3 +225,6 @@ set_prop(system_server, company1_device_prop)
+ set_prop(system_server, company1_prop)
+ set_prop(system_server, company1_wifi_prop)
++
++hal_client_domain(system_server, hal_test)
++
+diff --git a/device/mediatek/sepolicy/bsp/plat_private/service_contexts b/device/mediatek/sepolicy/bsp/plat_private/service_contexts
+index e7aee54a7f..756401890b 100644
+--- a/device/mediatek/sepolicy/bsp/plat_private/service_contexts
++++ b/device/mediatek/sepolicy/bsp/plat_private/service_contexts
+@@ -63,3 +63,5 @@ scanner                                    u:object_r:scanner_service:s0
+ cradle_manager                             u:object_r:cradle_manager_service:s0
+ #crypto_manager                             u:object_r:crypto_manager_service:s0
++
++test                                       u:object_r:test_service:s0
+diff --git a/device/company1/common/company1.mk b/device/company1/common/company1.mk
+index b439a6d3ad..2ed40cfab2 100644
+--- a/device/company1/common/company1.mk
++++ b/device/company1/common/company1.mk
+@@ -57,7 +57,8 @@ PRODUCT_PACKAGES += \
+     libmtkcam_fwkutils_sys \
+     libscanpass \
+-    libnativeSDK
++    libnativeSDK \
++    T3
+ 
+ PRODUCT_COPY_FILES += \
+     $(LOCAL_PATH)/sounds/Scan_new.ogg:system/media/audio/notifications/Scan_new.ogg
+diff --git a/device/company1/common/sepolicy/service.te b/device/company1/common/sepolicy/service.te
+index 4c255cb9f1..44dedeb933 100644
+--- a/device/company1/common/sepolicy/service.te
++++ b/device/company1/common/sepolicy/service.te
+@@ -11,3 +11,5 @@ type scanner_service, app_api_service, service_manager_type;
+ type crypto_manager_service, app_api_service, system_server_service, service_manager_type;
++
++type test_service, app_api_service, system_server_service, service_manager_type;
+\ No newline at end of file
+diff --git a/device/company1/common/sepolicy/system_server.te b/device/company1/common/sepolicy/system_server.te
+index 23652cefbb..0a68dfc452 100644
+--- a/device/company1/common/sepolicy/system_server.te
++++ b/device/company1/common/sepolicy/system_server.te
+@@ -14,6 +14,8 @@ allow system_server company1_battery_manager_service:service_manager { add find };
+ allow system_server crad_manager_service:service_manager { add find };
+ allow system_server default_android_service:service_manager find;
+ 
++allow system_server test_service:service_manager { add find };
++
+ allow system_server vendor_framework_file:dir search;
+ 
+ allow system_server factory_data:file { r_file_perms open read getattr };
+diff --git a/device/company1/product1/device.mk b/device/company1/product1/device.mk
+index d104d690d0..2b6b2a5210 100644
+--- a/device/company1/product1/device.mk
++++ b/device/company1/product1/device.mk
+@@ -261,4 +261,8 @@ PRODUCT_COPY_FILES += device/company1/product1/lib/audio.primary.mt8768.so:$(TARG
+ #[33539][Open Mtklog default by MAIDU_DEFOPEN_MTKLOG] huangzhangbin 20200825
+ ifeq ($(strip $(MAIDU_DEFOPEN_MTKLOG)), yes)
+   PRODUCT_PROPERTY_OVERRIDES += ro.maidu.defopen.mtklog=1
+-endif
+\ No newline at end of file
++endif
++
++PRODUCT_PACKAGES += android.hardware.test@1.0-service
++PRODUCT_PACKAGES += android.hardware.test@1.0-impl
++
+diff --git a/frameworks/base/Android.bp b/frameworks/base/Android.bp
+index b35e6956b5..03bedb3d0d 100644
+--- a/frameworks/base/Android.bp
++++ b/frameworks/base/Android.bp
+@@ -247,6 +247,8 @@ java_library {
+         "core/java/android/os/storage/IStorageEventListener.aidl",
+         "core/java/android/os/storage/IStorageShutdownObserver.aidl",
+         "core/java/android/os/storage/IObbActionListener.aidl",
++        "core/java/android/os/test/ITestEventListener.aidl",
++        "core/java/android/os/test/ITestService.aidl",
+         ":keystore_aidl",
+         "core/java/android/security/keymaster/IKeyAttestationApplicationIdProvider.aidl",
+         "core/java/android/service/autofill/IAutoFillService.aidl",
+diff --git a/frameworks/base/api/current.txt b/frameworks/base/api/current.txt
+index ece291e1e9..cd5a8592b3 100644
+--- a/frameworks/base/api/current.txt
++++ b/frameworks/base/api/current.txt
+@@ -9534,6 +9534,7 @@ package android.content {
+     field public static final java.lang.String TELECOM_SERVICE = "telecom";
+     field public static final java.lang.String TELEPHONY_SERVICE = "phone";
+     field public static final java.lang.String TELEPHONY_SUBSCRIPTION_SERVICE = "telephony_subscription_service";
++    field public static final java.lang.String TEST_SERVICE = "test";
+     field public static final java.lang.String TEXT_CLASSIFICATION_SERVICE = "textclassification";
+     field public static final java.lang.String TEXT_SERVICES_MANAGER_SERVICE = "textservices";
+     field public static final java.lang.String TV_INPUT_SERVICE = "tv_input";
+@@ -33627,6 +33628,61 @@ package android.os.strictmode {
+ 
+ }
+ 
++package android.os.test {
++
++  public abstract interface ITestEventListener implements android.os.IInterface {
++    method public abstract void onEvent(android.os.test.TestListenerEvent) throws android.os.RemoteException;
++  }
++
++  public static abstract class ITestEventListener.Stub extends android.os.Binder implements android.os.test.ITestEventListener {
++    ctor public ITestEventListener.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.test.ITestEventListener asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract interface ITestService implements android.os.IInterface {
++    method public abstract java.lang.String helloWorld(java.lang.String) throws android.os.RemoteException;
++    method public abstract void init(int, java.lang.String) throws android.os.RemoteException;
++    method public abstract void release() throws android.os.RemoteException;
++    method public abstract boolean setTestEventListener(android.os.test.ITestEventListener) throws android.os.RemoteException;
++  }
++
++  public static abstract class ITestService.Stub extends android.os.Binder implements android.os.test.ITestService {
++    ctor public ITestService.Stub();
++    method public android.os.IBinder asBinder();
++    method public static android.os.test.ITestService asInterface(android.os.IBinder);
++    method public boolean onTransact(int, android.os.Parcel, android.os.Parcel, int) throws android.os.RemoteException;
++  }
++
++  public abstract class TestEventListener extends android.os.test.ITestEventListener.Stub {
++    ctor public TestEventListener();
++  }
++
++  public class TestListenerEvent implements android.os.Parcelable {
++    ctor public TestListenerEvent(int, java.lang.String);
++    ctor public TestListenerEvent(android.os.Parcel);
++    method public int describeContents();
++    method public java.lang.String getMsg();
++    method public int getWhat();
++    method public void readFromParcel(android.os.Parcel);
++    method public void setMsg(java.lang.String);
++    method public void setWhat(int);
++    method public void writeToParcel(android.os.Parcel, int);
++    field public static final android.os.Parcelable.Creator<android.os.test.TestListenerEvent> CREATOR;
++  }
++
++  public class TestManager {
++    ctor public TestManager(android.os.test.ITestService);
++    method public java.lang.String helloWorld(java.lang.String);
++    method public void init(int, java.lang.String);
++    method public void release();
++    method public boolean setTestListener(android.os.test.TestEventListener);
++    field public static final java.lang.String TAG = "TestManager";
++  }
++
++}
++
+ package android.preference {
+ 
+   public class CheckBoxPreference extends android.preference.TwoStatePreference {
+diff --git a/frameworks/base/core/java/android/app/SystemServiceRegistry.java b/frameworks/base/core/java/android/app/SystemServiceRegistry.java
+index 149af26244..1e3895c542 100644
+--- a/frameworks/base/core/java/android/app/SystemServiceRegistry.java
++++ b/frameworks/base/core/java/android/app/SystemServiceRegistry.java
+@@ -129,6 +129,8 @@ import android.os.UserManager;
+ import android.os.Vibrator;
+ import android.os.health.SystemHealthManager;
+ import android.os.storage.StorageManager;
++import android.os.test.TestManager;
++import android.os.test.ITestService;
+ import android.print.IPrintManager;
+ import android.print.PrintManager;
+ import android.service.oemlock.IOemLockService;
+@@ -1027,6 +1029,20 @@ public final class SystemServiceRegistry {
+                                         Context.DEVICE_IDLE_CONTROLLER));
+                         return new DeviceIdleManager(ctx.getOuterContext(), service);
+                     }});
++
++        registerService(Context.TEST_SERVICE, TestManager.class,
++                new CachedServiceFetcher<TestManager>() {
++            @Override
++            public TestManager createService(ContextImpl ctx) {
++                IBinder iBinder = ServiceManager.getService(Context.TEST_SERVICE);
++                if (iBinder == null) {
++                    return null;
++                }
++                ITestService service = ITestService.Stub
++                        .asInterface(iBinder);
++                return new TestManager(service);
++            }});
++
+     }
+ 
+     /**
+diff --git a/frameworks/base/core/java/android/content/Context.java b/frameworks/base/core/java/android/content/Context.java
+index 90a94ee760..3a0a82338d 100644
+--- a/frameworks/base/core/java/android/content/Context.java
++++ b/frameworks/base/core/java/android/content/Context.java
+@@ -4209,6 +4209,14 @@ public abstract class Context {
+     @SystemApi
+     public static final String SECURE_ELEMENT_SERVICE = "secure_element";
+ 
++    /**
++     * Use with {@link #getSystemService(String)} to retrieve a
++     * {@link android.os.test.TestManager} for cross profile operations.
++     *
++     * @see #getSystemService(String)
++     */
++    public static final String TEST_SERVICE = "test";
++
+     /**
+      * Determine whether the given permission is allowed for a particular
+      * process and user ID running in the system.
+diff --git a/frameworks/base/services/core/Android.bp b/frameworks/base/services/core/Android.bp
+index 8da6d1e48f..e7a19e3ff5 100644
+--- a/frameworks/base/services/core/Android.bp
++++ b/frameworks/base/services/core/Android.bp
+@@ -43,6 +43,7 @@ java_library_static {
+         "android.hardware.vibrator-V1.0-java",
+         "android.hardware.configstore-V1.0-java",
+         "android.hardware.contexthub-V1.0-java",
++        "android.hardware.test-V1.0-java",
+     ],
+ }
+ 
+diff --git a/frameworks/base/services/java/com/android/server/SystemServer.java b/frameworks/base/services/java/com/android/server/SystemServer.java
+index 5413ce2ecf..77c0d5c379 100644
+--- a/frameworks/base/services/java/com/android/server/SystemServer.java
++++ b/frameworks/base/services/java/com/android/server/SystemServer.java
+@@ -120,6 +120,7 @@ import com.android.server.usage.UsageStatsService;
+ import com.android.server.vr.VrManagerService;
+ import com.android.server.webkit.WebViewUpdateService;
+ import com.android.server.wm.WindowManagerService;
++import com.android.server.test.TestService;
+ 
+ import com.mediatek.server.MtkSystemServer;
+ 
+@@ -1723,6 +1724,14 @@ public final class SystemServer {
+         mSystemServiceManager.startService(StatsCompanionService.Lifecycle.class);
+         traceEnd();
+ 
++        // add by Marco.Li for testing
++        try {
++            Slog.i(TAG, "marcoo-test Service");
++            ServiceManager.addService(Context.TEST_SERVICE, new TestService());
++        } catch (Throwable e) {
++            reportWtf("starting TestService", e);
++        }
++
+         LedManagerService ledManager = null;
+diff --git a/system/sepolicy/prebuilts/api/26.0/public/attributes b/system/sepolicy/prebuilts/api/26.0/public/attributes
+index cde55da19f..bd6150b142 100644
+--- a/system/sepolicy/prebuilts/api/26.0/public/attributes
++++ b/system/sepolicy/prebuilts/api/26.0/public/attributes
+@@ -289,3 +289,6 @@ attribute hal_wifi_supplicant_server;
+ 
+ attribute display_service_server;
+ attribute wifi_keystore_service_server;
++
++attribute hal_test_client;
++attribute hal_test_server;
+diff --git a/system/sepolicy/prebuilts/api/26.0/public/hwservice.te b/system/sepolicy/prebuilts/api/26.0/public/hwservice.te
+index 65c52a23b6..2d138d3e55 100644
+--- a/system/sepolicy/prebuilts/api/26.0/public/hwservice.te
++++ b/system/sepolicy/prebuilts/api/26.0/public/hwservice.te
+@@ -20,6 +20,7 @@ type hal_health_hwservice, hwservice_manager_type;
+ type hal_ir_hwservice, hwservice_manager_type;
+ type hal_keymaster_hwservice, hwservice_manager_type;
+ type hal_light_hwservice, hwservice_manager_type;
++type hal_test_hwservice, hwservice_manager_type;
+ type hal_memtrack_hwservice, hwservice_manager_type;
+ type hal_nfc_hwservice, hwservice_manager_type;
+ type hal_oemlock_hwservice, hwservice_manager_type;
+diff --git a/system/sepolicy/prebuilts/api/27.0/public/attributes b/system/sepolicy/prebuilts/api/27.0/public/attributes
+index fa8a6a693b..bb8292cbcc 100644
+--- a/system/sepolicy/prebuilts/api/27.0/public/attributes
++++ b/system/sepolicy/prebuilts/api/27.0/public/attributes
+@@ -428,3 +428,9 @@ expandattribute hal_wifi_supplicant_server false;
+ 
+ attribute display_service_server;
+ attribute wifi_keystore_service_server;
++
++attribute hal_test_client;
++expandattribute hal_test_client true;
++attribute hal_test_server;
++expandattribute hal_test_server true;
++
+diff --git a/system/sepolicy/prebuilts/api/27.0/public/hwservice.te b/system/sepolicy/prebuilts/api/27.0/public/hwservice.te
+index 97b9b8d198..300e897cc5 100644
+--- a/system/sepolicy/prebuilts/api/27.0/public/hwservice.te
++++ b/system/sepolicy/prebuilts/api/27.0/public/hwservice.te
+@@ -22,6 +22,7 @@ type hal_health_hwservice, hwservice_manager_type;
+ type hal_ir_hwservice, hwservice_manager_type;
+ type hal_keymaster_hwservice, hwservice_manager_type;
+ type hal_light_hwservice, hwservice_manager_type;
++type hal_test_hwservice, hwservice_manager_type;
+ type hal_memtrack_hwservice, hwservice_manager_type;
+ type hal_neuralnetworks_hwservice, hwservice_manager_type;
+ type hal_nfc_hwservice, hwservice_manager_type;
+diff --git a/system/sepolicy/prebuilts/api/28.0/private/compat/26.0/26.0.ignore.cil b/system/sepolicy/prebuilts/api/28.0/private/compat/26.0/26.0.ignore.cil
+index c8edf9f7d1..5033963f6f 100644
+--- a/system/sepolicy/prebuilts/api/28.0/private/compat/26.0/26.0.ignore.cil
++++ b/system/sepolicy/prebuilts/api/28.0/private/compat/26.0/26.0.ignore.cil
+@@ -63,6 +63,7 @@
+     hal_usb_gadget_hwservice
+     hal_vehicle_hwservice
+     hal_wifi_offload_hwservice
++    hal_test_hwservice
+     incident_helper
+     incident_helper_exec
+     kmsg_debug_device
+@@ -145,7 +146,8 @@
+     wpantund_exec
+     wpantund_service
+     wpantund_tmpfs
+-    wm_trace_data_file))
++    wm_trace_data_file
++    test_service))
+ 
+ ;; private_objects - a collection of types that were labeled differently in
+ ;;     older policy, but that should not remain accessible to vendor policy.
+diff --git a/system/sepolicy/prebuilts/api/28.0/private/compat/27.0/27.0.ignore.cil b/system/sepolicy/prebuilts/api/28.0/private/compat/27.0/27.0.ignore.cil
+index 6106748300..1fc54a1e18 100644
+--- a/system/sepolicy/prebuilts/api/28.0/private/compat/27.0/27.0.ignore.cil
++++ b/system/sepolicy/prebuilts/api/28.0/private/compat/27.0/27.0.ignore.cil
+@@ -54,6 +54,7 @@
+     hal_usb_gadget_hwservice
+     hal_vehicle_hwservice
+     hal_wifi_hostapd_hwservice
++    hal_test_hwservice
+     incident_helper
+     incident_helper_exec
+     last_boot_reason_prop
+@@ -123,7 +124,8 @@
+     wpantund
+     wpantund_exec
+     wpantund_service
+-    wpantund_tmpfs))
++    wpantund_tmpfs
++    test_service))
+ 
+ ;; private_objects - a collection of types that were labeled differently in
+ ;;     older policy, but that should not remain accessible to vendor policy.
+diff --git a/system/sepolicy/prebuilts/api/28.0/private/hwservice_contexts b/system/sepolicy/prebuilts/api/28.0/private/hwservice_contexts
+index c75c0a5766..436029b770 100644
+--- a/system/sepolicy/prebuilts/api/28.0/private/hwservice_contexts
++++ b/system/sepolicy/prebuilts/api/28.0/private/hwservice_contexts
+@@ -30,6 +30,7 @@ android.hardware.health::IHealth                                u:object_r:hal_h
+ android.hardware.ir::IConsumerIr                                u:object_r:hal_ir_hwservice:s0
+ android.hardware.keymaster::IKeymasterDevice                    u:object_r:hal_keymaster_hwservice:s0
+ android.hardware.light::ILight                                  u:object_r:hal_light_hwservice:s0
++android.hardware.test::ITest                                    u:object_r:hal_test_hwservice:s0
+ android.hardware.lowpan::ILowpanDevice                          u:object_r:hal_lowpan_hwservice:s0
+ android.hardware.media.omx::IOmx                                u:object_r:hal_omx_hwservice:s0
+ android.hardware.media.omx::IOmxStore                           u:object_r:hal_omx_hwservice:s0
+diff --git a/system/sepolicy/prebuilts/api/28.0/public/attributes b/system/sepolicy/prebuilts/api/28.0/public/attributes
+index 42b6106797..3b958d7361 100644
+--- a/system/sepolicy/prebuilts/api/28.0/public/attributes
++++ b/system/sepolicy/prebuilts/api/28.0/public/attributes
+@@ -281,6 +281,7 @@ hal_attribute(health);
+ hal_attribute(ir);
+ hal_attribute(keymaster);
+ hal_attribute(light);
++hal_attribute(test);
+ hal_attribute(lowpan);
+ hal_attribute(memtrack);
+ hal_attribute(neuralnetworks);
+diff --git a/system/sepolicy/prebuilts/api/28.0/public/hwservice.te b/system/sepolicy/prebuilts/api/28.0/public/hwservice.te
+index 5fba86ac30..a044257eba 100644
+--- a/system/sepolicy/prebuilts/api/28.0/public/hwservice.te
++++ b/system/sepolicy/prebuilts/api/28.0/public/hwservice.te
+@@ -27,6 +27,7 @@ type hal_health_hwservice, hwservice_manager_type;
+ type hal_ir_hwservice, hwservice_manager_type;
+ type hal_keymaster_hwservice, hwservice_manager_type;
+ type hal_light_hwservice, hwservice_manager_type;
++type hal_test_hwservice, hwservice_manager_type;
+ type hal_lowpan_hwservice, hwservice_manager_type;
+ type hal_memtrack_hwservice, hwservice_manager_type;
+ type hal_neuralnetworks_hwservice, hwservice_manager_type;
+diff --git a/system/sepolicy/private/compat/26.0/26.0.ignore.cil b/system/sepolicy/private/compat/26.0/26.0.ignore.cil
+index c8edf9f7d1..5033963f6f 100644
+--- a/system/sepolicy/private/compat/26.0/26.0.ignore.cil
++++ b/system/sepolicy/private/compat/26.0/26.0.ignore.cil
+@@ -63,6 +63,7 @@
+     hal_usb_gadget_hwservice
+     hal_vehicle_hwservice
+     hal_wifi_offload_hwservice
++    hal_test_hwservice
+     incident_helper
+     incident_helper_exec
+     kmsg_debug_device
+@@ -145,7 +146,8 @@
+     wpantund_exec
+     wpantund_service
+     wpantund_tmpfs
+-    wm_trace_data_file))
++    wm_trace_data_file
++    test_service))
+ 
+ ;; private_objects - a collection of types that were labeled differently in
+ ;;     older policy, but that should not remain accessible to vendor policy.
+diff --git a/system/sepolicy/private/compat/27.0/27.0.ignore.cil b/system/sepolicy/private/compat/27.0/27.0.ignore.cil
+index 6106748300..1fc54a1e18 100644
+--- a/system/sepolicy/private/compat/27.0/27.0.ignore.cil
++++ b/system/sepolicy/private/compat/27.0/27.0.ignore.cil
+@@ -54,6 +54,7 @@
+     hal_usb_gadget_hwservice
+     hal_vehicle_hwservice
+     hal_wifi_hostapd_hwservice
++    hal_test_hwservice
+     incident_helper
+     incident_helper_exec
+     last_boot_reason_prop
+@@ -123,7 +124,8 @@
+     wpantund
+     wpantund_exec
+     wpantund_service
+-    wpantund_tmpfs))
++    wpantund_tmpfs
++    test_service))
+ 
+ ;; private_objects - a collection of types that were labeled differently in
+ ;;     older policy, but that should not remain accessible to vendor policy.
+diff --git a/system/sepolicy/private/hwservice_contexts b/system/sepolicy/private/hwservice_contexts
+index c75c0a5766..436029b770 100644
+--- a/system/sepolicy/private/hwservice_contexts
++++ b/system/sepolicy/private/hwservice_contexts
+@@ -30,6 +30,7 @@ android.hardware.health::IHealth                                u:object_r:hal_h
+ android.hardware.ir::IConsumerIr                                u:object_r:hal_ir_hwservice:s0
+ android.hardware.keymaster::IKeymasterDevice                    u:object_r:hal_keymaster_hwservice:s0
+ android.hardware.light::ILight                                  u:object_r:hal_light_hwservice:s0
++android.hardware.test::ITest                                    u:object_r:hal_test_hwservice:s0
+ android.hardware.lowpan::ILowpanDevice                          u:object_r:hal_lowpan_hwservice:s0
+ android.hardware.media.omx::IOmx                                u:object_r:hal_omx_hwservice:s0
+ android.hardware.media.omx::IOmxStore                           u:object_r:hal_omx_hwservice:s0
+diff --git a/system/sepolicy/public/attributes b/system/sepolicy/public/attributes
+index 42b6106797..3b958d7361 100644
+--- a/system/sepolicy/public/attributes
++++ b/system/sepolicy/public/attributes
+@@ -281,6 +281,7 @@ hal_attribute(health);
+ hal_attribute(ir);
+ hal_attribute(keymaster);
+ hal_attribute(light);
++hal_attribute(test);
+ hal_attribute(lowpan);
+ hal_attribute(memtrack);
+ hal_attribute(neuralnetworks);
+diff --git a/system/sepolicy/public/hwservice.te b/system/sepolicy/public/hwservice.te
+index 5fba86ac30..a044257eba 100644
+--- a/system/sepolicy/public/hwservice.te
++++ b/system/sepolicy/public/hwservice.te
+@@ -27,6 +27,7 @@ type hal_health_hwservice, hwservice_manager_type;
+ type hal_ir_hwservice, hwservice_manager_type;
+ type hal_keymaster_hwservice, hwservice_manager_type;
+ type hal_light_hwservice, hwservice_manager_type;
++type hal_test_hwservice, hwservice_manager_type;
+ type hal_lowpan_hwservice, hwservice_manager_type;
+ type hal_memtrack_hwservice, hwservice_manager_type;
+ type hal_neuralnetworks_hwservice, hwservice_manager_type;
+diff --git a/hardware/interfaces/current.txt b/hardware/interfaces/current.txt
+index cc15322b83..405863b7b5 100644
+--- a/hardware/interfaces/current.txt
++++ b/hardware/interfaces/current.txt
+@@ -380,3 +380,6 @@ e362203b941f18bd4cba29a62adfa02453ed00d6be5b72cdb6c4d7e0bf394a40 android.hardwar
+ 21757d0e5dd4b7e4bd981a4a20531bca3c32271ad9777b17b74eb5a1ea508384 android.hardware.wifi.supplicant@1.1::ISupplicantStaIface
+ cd4330c3196bda1d642a32abfe23a7d64ebfbda721940643af6867af3b3f0aa9 android.hardware.wifi.supplicant@1.1::ISupplicantStaIfaceCallback
+ 10ff2fae516346b86121368ce5790d5accdfcb73983246b813f3d488b66db45a android.hardware.wifi.supplicant@1.1::ISupplicantStaNetwork
++b0fc3038afe91f58f1318ce49d02b011c16fb50408436fa743c62619ae973a1e android.hardware.test@1.0::types
++2065a081548cdfb5c02a0fb5439da20c3ed833bf0a7d7c07363d9c2575eacc5b android.hardware.test@1.0::ITest
++525ca796a624f8d4f6e22206d98b6717d4dc9e00462c3b973758537d337bc0eb android.hardware.test@1.0::ITestCallback

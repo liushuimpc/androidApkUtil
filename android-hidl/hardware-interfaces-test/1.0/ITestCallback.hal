@@ -1,0 +1,5 @@
+package android.hardware.test@1.0;
+
+interface ITestCallback {
+    oneway onTestEvent(TestEvent event);
+};

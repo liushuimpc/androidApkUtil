@@ -1,0 +1,11 @@
+package android.hardware.test@1.0;
+
+struct TestID{
+	int32_t id;
+	string name;
+};
+
+struct TestEvent{
+	int32_t what;
+	string msg;
+};

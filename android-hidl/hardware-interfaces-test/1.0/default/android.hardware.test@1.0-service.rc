@@ -1,0 +1,4 @@
+service test_hal_service /vendor/bin/hw/android.hardware.test@1.0-service
+    class hal
+    user system
+    group system

@@ -1,0 +1,9 @@
+# Set a new domain called hal_test_default
+type hal_test_default, domain;
+# Set your domain as server domain of hal_xxx in which define by AOSP already
+hal_server_domain(hal_test_default, hal_test)
+
+# Set your exec file type
+type hal_test_default_exec, exec_type, vendor_file_type, file_type;
+# Setup for domain transition
+init_daemon_domain(hal_test_default)
