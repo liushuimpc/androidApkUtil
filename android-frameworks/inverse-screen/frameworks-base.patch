@@ -1,0 +1,160 @@
+commit 90f19efc0442c8133feb4467e16ee
+Author: Marco.Li <lizidong.marco@qq.com>
+Date:   2021-08-23T10:06:27+08:00
+
+    [Scope]:
+        frameworks/base/
+        vendor/mediatek/proprietary/packages/apps/SettingsProvider/
+        vendor/mediatek/proprietary/packages/apps/MtkSettings/
+    
+    [Cause Description]:
+        It's required to support the inverse rotation 180° on portrait pose of the screen
+    
+    [Total Solution]:
+        Add SettingsProvider System.ALLOW_ALL_ROTATION to control this feature
+    
+    [Testing Proposal]:
+        Condition: This feature is based on accelerometer rotation is enabled.
+    
+        Settings -> Display -> Allow all rotations
+
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index 7232ea171e6..8116d910bf0 100644
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -4145,6 +4145,18 @@ public final class Settings {
+         /** @hide */
+         private static final Validator SHOW_BATTERY_PERCENT_VALIDATOR = BOOLEAN_VALIDATOR;
+ 
++        /**
++         * Control whether all the rotations will be enabled to change screen orientation
++         * when enabled {@link #ACCELEROMETER_ROTATION}.
++         *    0 - not support ROTATION_180
++         *    1 - supports all the rotations
++         * @hide
++         */
++        public static final String ALLOW_ALL_ROTATION = "allow_all_rotation";
++
++        /** @hide */
++        public static final Validator ALLOW_ALL_ROTATION_VALIDATOR = BOOLEAN_VALIDATOR;
++
+         /**
+          * IMPORTANT: If you add a new public settings you also have to add it to
+          * PUBLIC_SETTINGS below. If the new setting is hidden you have to add
+@@ -4210,7 +4222,8 @@ public final class Settings {
+             SHOW_BATTERY_PERCENT,
+             NOTIFICATION_VIBRATION_INTENSITY,
+             HAPTIC_FEEDBACK_INTENSITY,
+-            DISPLAY_COLOR_MODE
++            DISPLAY_COLOR_MODE,
++            ALLOW_ALL_ROTATION
+         };
+ 
+         /**
+@@ -4290,6 +4290,7 @@ public final class Settings {
+             PUBLIC_SETTINGS.add(HAPTIC_FEEDBACK_ENABLED);
+             PUBLIC_SETTINGS.add(SHOW_WEB_SUGGESTIONS);
+             PUBLIC_SETTINGS.add(VIBRATE_WHEN_RINGING);
++            PUBLIC_SETTINGS.add(ALLOW_ALL_ROTATION);
+ 
+             /// M: Add MTK settings to PUBLIC group @{
+             putMtkSettingsToSet(className, "putInPublicSettings", Set.class, PUBLIC_SETTINGS);
+@@ -4417,6 +4431,8 @@ public final class Settings {
+             VALIDATORS.put(WIFI_STATIC_DNS1, WIFI_STATIC_DNS1_VALIDATOR);
+             VALIDATORS.put(WIFI_STATIC_DNS2, WIFI_STATIC_DNS2_VALIDATOR);
+             VALIDATORS.put(SHOW_BATTERY_PERCENT, SHOW_BATTERY_PERCENT_VALIDATOR);
++            VALIDATORS.put(ALLOW_ALL_ROTATION, ALLOW_ALL_ROTATION_VALIDATOR);
++
+         }
+ 
+         /**
+@@ -4473,6 +4489,7 @@ public final class Settings {
+             INSTANT_APP_SETTINGS.add(TIME_12_24);
+             INSTANT_APP_SETTINGS.add(SOUND_EFFECTS_ENABLED);
+             INSTANT_APP_SETTINGS.add(ACCELEROMETER_ROTATION);
++            INSTANT_APP_SETTINGS.add(ALLOW_ALL_ROTATION);
+         }
+ 
+         /**
+diff --git a/core/java/com/android/internal/view/RotationPolicy.java b/core/java/com/android/internal/view/RotationPolicy.java
+index e9472fa0f46..cea43cf859c 100644
+--- a/core/java/com/android/internal/view/RotationPolicy.java
++++ b/core/java/com/android/internal/view/RotationPolicy.java
+@@ -139,7 +139,10 @@ public final class RotationPolicy {
+     }
+ 
+     private static boolean areAllRotationsAllowed(Context context) {
+-        return context.getResources().getBoolean(R.bool.config_allowAllRotations);
++        // return context.getResources().getBoolean(R.bool.config_allowAllRotations);
++        return Settings.System.getIntForUser(context.getContentResolver(),
++                        Settings.System.ALLOW_ALL_ROTATION, 0, UserHandle.USER_CURRENT) == 1;
+     }
+ 
+     private static void setRotationLock(final boolean enabled, final int rotation) {
+diff --git a/core/proto/android/providers/settings/system.proto b/core/proto/android/providers/settings/system.proto
+index dfc40819ea2..0f9200d6fab 100644
+--- a/core/proto/android/providers/settings/system.proto
++++ b/core/proto/android/providers/settings/system.proto
+@@ -148,6 +148,12 @@ message SystemSettingsProto {
+         // If 0, then rotation lock toggle is not hidden for accessibility (although it may be
+         // unavailable for other reasons).  If 1, then the rotation lock toggle is hidden.
+         optional SettingProto hide_rotation_lock_toggle_for_accessibility = 3 [ (android.privacy).dest = DEST_AUTOMATIC ];
++        // Control whether all the rotations will be enabled to change screen orientation
++        // when enabled {@link #ACCELEROMETER_ROTATION}.
++        // 0 - not support ROTATION_180
++        // 1 - supports all the rotations
++        optional SettingProto allow_all_rotation = 4 [ (android.privacy).dest = DEST_AUTOMATIC ];
+     }
+     optional Rotation rotation = 20;
+ 
+diff --git a/services/core/java/com/android/server/policy/PhoneWindowManager.java b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+index e510b5365df..e774648a22d 100755
+--- a/services/core/java/com/android/server/policy/PhoneWindowManager.java
++++ b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+@@ -1157,6 +1157,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             resolver.registerContentObserver(Settings.Secure.getUriFor(
+                     Settings.Secure.SYSTEM_NAVIGATION_KEYS_ENABLED), false, this,
+                     UserHandle.USER_ALL);
++            resolver.registerContentObserver(Settings.System.getUriFor(
++                    Settings.System.ALLOW_ALL_ROTATION), false, this,
++                    UserHandle.USER_ALL);
+             updateSettings();
+         }
+ 
+@@ -2678,6 +2681,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             if (mImmersiveModeConfirmation != null) {
+                 mImmersiveModeConfirmation.loadSetting(mCurrentUserId);
+             }
++
++            mAllowAllRotations = Settings.System.getIntForUser(resolver,
++                    Settings.System.ALLOW_ALL_ROTATION, 0, UserHandle.USER_CURRENT);
+         }
+         synchronized (mWindowManagerFuncs.getWindowManagerLock()) {
+             PolicyControl.reloadFromSetting(mContext);
+@@ -7888,15 +7894,20 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     || orientation == ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                     || orientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                     || orientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT) {
++
++                /**
++                 * We introduced {@link #ALLOW_ALL_ROTATION} to control mAllowAllRotations.
++                 */
+                 // Otherwise, use sensor only if requested by the application or enabled
+                 // by default for USER or UNSPECIFIED modes.  Does not apply to NOSENSOR.
+-                if (mAllowAllRotations < 0) {
+-                    // Can't read this during init() because the context doesn't
+-                    // have display metrics at that time so we cannot determine
+-                    // tablet vs. phone then.
+-                    mAllowAllRotations = mContext.getResources().getBoolean(
+-                            com.android.internal.R.bool.config_allowAllRotations) ? 1 : 0;
+-                }
++                // if (mAllowAllRotations < 0) {
++                //     // Can't read this during init() because the context doesn't
++                //     // have display metrics at that time so we cannot determine
++                //     // tablet vs. phone then.
++                //     mAllowAllRotations = mContext.getResources().getBoolean(
++                //             com.android.internal.R.bool.config_allowAllRotations) ? 1 : 0;
++                // }
+                 if (sensorRotation != Surface.ROTATION_180
+                         || mAllowAllRotations == 1
+                         || orientation == ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR

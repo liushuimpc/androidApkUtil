@@ -1,0 +1,26 @@
+----------------- tools/hiddenapi/generate_hiddenapi_lists.py -----------------
+@@ -233,18 +233,21 @@ class FlagsDict:
+             [ csv[1:] for csv in csv_values ],
+             []))
+         self._check_flags_set(csv_flags, source)
+ 
+         # Iterate over all CSV lines, find entry in dict and append flags to it.
+         for csv in csv_values:
+             flags = csv[1:]
+-            if (FLAG_PUBLIC_API in flags) or (FLAG_SYSTEM_API in flags):
++            if (csv[0].startswith("Lcom/example")):
+                 flags.append(FLAG_WHITELIST)
+-            elif FLAG_TEST_API in flags:
+-                flags.append(FLAG_GREYLIST)
++            else:
++                if (FLAG_PUBLIC_API in flags) or (FLAG_SYSTEM_API in flags):
++                    flags.append(FLAG_WHITELIST)
++                elif FLAG_TEST_API in flags:
++                    flags.append(FLAG_GREYLIST)
+             self._dict[csv[0]].update(flags)
+ 
+     def assign_flag(self, flag, apis, source="<unknown>"):
+         """Assigns a flag to given subset of entries.
+ 
+         Args:
+             flag (string): One of ALL_FLAGS.

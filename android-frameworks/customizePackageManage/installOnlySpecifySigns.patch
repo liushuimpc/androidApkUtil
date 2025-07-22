@@ -1,0 +1,123 @@
+index 4a8faf0..143bd4a 100755
+--- a/packages/apps/PackageInstaller/src/com/android/packageinstaller/PackageInstallerActivity.java
++++ b/packages/apps/PackageInstaller/src/com/android/packageinstaller/PackageInstallerActivity.java
+@@ -54,6 +54,10 @@ import android.widget.TextView;
+ 
+ import java.io.File;
+ import java.util.List;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.security.Signature;
++import android.widget.Toast;
+ 
+ /*
+  * This activity is launched when a new application is installed via side loading
+@@ -440,7 +444,7 @@ public class PackageInstallerActivity extends Activity implements OnCancelListen
+     @Override
+     protected void onCreate(Bundle icicle) {
+         super.onCreate(icicle);
+-
++       PackageInfo yfmPkgInfo = null;
+         mPm = getPackageManager();
+         mInstaller = mPm.getPackageInstaller();
+         mUserManager = (UserManager) getSystemService(Context.USER_SERVICE);
+@@ -492,10 +496,11 @@ public class PackageInstallerActivity extends Activity implements OnCancelListen
+ 
+         final PackageUtil.AppSnippet as;
+         if ("package".equals(mPackageURI.getScheme())) {
++           Log.w(TAG, "start package install");
+             mInstallFlowAnalytics.setFileUri(false);
+             try {
+                 mPkgInfo = mPm.getPackageInfo(mPackageURI.getSchemeSpecificPart(),
+-                        PackageManager.GET_PERMISSIONS | PackageManager.GET_UNINSTALLED_PACKAGES);
++                        PackageManager.GET_PERMISSIONS | PackageManager.GET_UNINSTALLED_PACKAGES |PackageManager.GET_ACTIVITIES |PackageManager.GET_SIGNATURES);
+             } catch (NameNotFoundException e) {
+             }
+             if (mPkgInfo == null) {
+@@ -511,6 +516,7 @@ public class PackageInstallerActivity extends Activity implements OnCancelListen
+             as = new PackageUtil.AppSnippet(mPm.getApplicationLabel(mPkgInfo.applicationInfo),
+                     mPm.getApplicationIcon(mPkgInfo.applicationInfo));
+         } else {
++           Log.w(TAG, "start file install");
+             mInstallFlowAnalytics.setFileUri(true);
+             final File sourceFile = new File(mPackageURI.getPath());
+             PackageParser.Package parsed = PackageUtil.getPackageInfo(sourceFile);
+@@ -525,6 +531,16 @@ public class PackageInstallerActivity extends Activity implements OnCancelListen
+                         InstallFlowAnalytics.RESULT_FAILED_TO_GET_PACKAGE_INFO);
+                 return;
+             }
++           final PackageParser parser = new PackageParser();
++           try{
++               parser.collectCertificates(parsed, PackageManager.GET_SIGNATURES);
++           }catch (PackageParser.PackageParserException e){
++           }
++
++           yfmPkgInfo = parser.generatePackageInfo(parsed, null,
++                    PackageManager.GET_PERMISSIONS | PackageManager.GET_SIGNATURES, 0, 0, null,
++                    new PackageUserState());
++                   
+             mPkgInfo = PackageParser.generatePackageInfo(parsed, null,
+                     PackageManager.GET_PERMISSIONS, 0, 0, null,
+                     new PackageUserState());
+@@ -532,7 +548,19 @@ public class PackageInstallerActivity extends Activity implements OnCancelListen
+             as = PackageUtil.getAppSnippet(this, mPkgInfo.applicationInfo, sourceFile);
+         }
+         mInstallFlowAnalytics.setPackageInfoObtained();
+-
++       if(yfmPkgInfo != null){
++           String md5str = getSignMd5Str(yfmPkgInfo/*mPkgInfo.packageName*/);
++           Log.w(TAG, "md5str = "+ md5str);
++           if(md5str != null && md5str.equals("630999090D4C985709E6CAC7FD16Cabc")){
++               Log.w(TAG, "start install!");
++           }else{
++               Log.w(TAG, "forbid install!");
++               Toast.makeText(this, R.string.unknown_apps_dlg_title,Toast.LENGTH_LONG).show();
++               finish();
++               return;
++           }
++       }
++
+         //set view
+         setContentView(R.layout.install_start);
+         mInstallConfirm = findViewById(R.id.install_confirm_panel);
+@@ -565,6 +593,40 @@ public class PackageInstallerActivity extends Activity implements OnCancelListen
+         }
+     }
+ 
++   public String getSignMd5Str(PackageInfo packageInfo) {
++       //try {
++       //    PackageInfo packageInfo = getPackageManager().getPackageInfo(packagename, PackageManager.GET_SIGNATURES);
++           android.content.pm.Signature[] signs = packageInfo.signatures;
++           android.content.pm.Signature sign = signs[0];
++           String signStr = encryptionMD5(sign.toByteArray());
++           return signStr;
++       //} catch (PackageManager.NameNotFoundException e) {
++       //    e.printStackTrace();
++       //}
++       //return "";
++   }
++
++   public static String encryptionMD5(byte[] byteStr) {
++       MessageDigest messageDigest = null;
++       StringBuffer md5StrBuff = new StringBuffer();
++       try {
++           messageDigest = MessageDigest.getInstance("MD5");
++           messageDigest.reset();
++           messageDigest.update(byteStr);
++           byte[] byteArray = messageDigest.digest();
++           for (int i = 0; i < byteArray.length; i++) {
++               if (Integer.toHexString(0xFF & byteArray[i]).length() == 1) {
++                   md5StrBuff.append("0").append(Integer.toHexString(0xFF & byteArray[i]));
++               } else {
++                   md5StrBuff.append(Integer.toHexString(0xFF & byteArray[i]));
++               }
++           }
++       } catch (NoSuchAlgorithmException e) {
++           e.printStackTrace();
++       }
++       return md5StrBuff.toString();
++   }
++   
+     /** Get the ApplicationInfo for the calling package, if available */
+     private ApplicationInfo getSourceInfo() {
+         String callingPackage = getCallingPackage();

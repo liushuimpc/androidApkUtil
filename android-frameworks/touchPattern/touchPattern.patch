@@ -1,0 +1,336 @@
+[Touch pattern] Add touch pattern service in frameworks
+
+diff --git a/Android.bp b/Android.bp
+index da4a455a5f0..dcb9d2d5462 100755
+--- a/Android.bp
++++ b/Android.bp
+@@ -184,6 +184,7 @@ java_library {
+         "core/java/android/hardware/radio/ITunerCallback.aidl",
+         "core/java/android/hardware/soundtrigger/IRecognitionStatusCallback.aidl",
+         "core/java/android/hardware/usb/IUsbManager.aidl",
++        "core/java/android/hardware/ITouchPatternManager.aidl",
+         "core/java/android/net/ICaptivePortal.aidl",
+         "core/java/android/net/IConnectivityManager.aidl",
+         "core/java/android/net/IIpConnectivityMetrics.aidl",
+diff --git a/core/java/android/content/Context.java b/core/java/android/content/Context.java
+index 90a94ee7608..0f93f25c094 100644
+--- a/core/java/android/content/Context.java
++++ b/core/java/android/content/Context.java
+@@ -4199,6 +4199,16 @@ public abstract class Context {
+      */
+     public static final String CROSS_PROFILE_APPS_SERVICE = "crossprofileapps";
+ 
++    /**
++     * Use with {@link #getSystemService} to retrieve a {@link
++     * android.hardware.TouchPattern} for access to touch pattern status
++     *
++     * @see #getSystemService
++     * @see android.hardware.TouchPattern
++     * @hide
++     */
++    public static final String TOUCH_PATTERN_SERVICE = "touchpattern";
++
+     /**
+      * Use with {@link #getSystemService} to retrieve a
+      * {@link android.se.omapi.ISecureElementService}
+diff --git a/core/java/android/hardware/ITouchPatternManager.aidl b/core/java/android/hardware/ITouchPatternManager.aidl
+new file pattern 100644
+index 00000000000..3e548a7ea94
+--- /dev/null
++++ b/core/java/android/hardware/ITouchPatternManager.aidl
+@@ -0,0 +1,30 @@
++/*
++ * Copyright 2009-2018 Pegatron Corporation. All Rights Reserved.
++ *
++ * Pegatron Corporation. Confidential and Proprietary
++ *
++ * The following software source code ("Software") is strictly confidential and
++ * is proprietary to Pegatron Corporation. ("PEGATRON").  It may only be read,
++ * used, copied, adapted, modified or otherwise dealt with by you if you have
++ * entered into a confidentiality agreement with PEGATRON and then subject to the
++ * terms of that confidentiality agreement and any other applicable agreement
++ * between you and PEGATRON.  If you are in any doubt as to whether you are
++ * entitled to access, read, use, copy, adapt, modify or otherwise deal with
++ * the Software or whether you are entitled to disclose the Software to any
++ * other person you should contact PEGATRON.  If you have not entered into a
++ * confidentiality agreement with PEGATRON granting access to this Software you
++ * should forthwith return all media, copies and printed listings containing
++ * the Software to PEGATRON.
++ *
++ * PEGATRON reserves the right to take legal action against you should you breach
++ * the above provisions.
++ */
++
++package android.hardware;
++
++/** @hide */
++interface ITouchPatternManager
++{
++    int setTouchPattern(int pattern);
++    int getTouchPattern();
++}
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index a6a5a990a0b..e793ec96621 100644
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -4089,6 +4089,16 @@ public final class Settings {
+         /** @hide */
+         private static final Validator SHOW_BATTERY_PERCENT_VALIDATOR = BOOLEAN_VALIDATOR;
+ 
++        /**
++         * The touch pattern values between 0 and 2.
++         * @hide
++         */
++        public static final String TOUCH_PATTERN_OPTIONS = "touch_pattern";
++
++        /** @hide */
++        private static final Validator TOUCH_PATTERN_OPTIONS_VALIDATOR =
++                new SettingsValidators.InclusiveIntegerRangeValidator(0, 2);
++
+         /**
+          * IMPORTANT: If you add a new public settings you also have to add it to
+          * PUBLIC_SETTINGS below. If the new setting is hidden you have to add
+@@ -4122,6 +4132,7 @@ public final class Settings {
+             SCREEN_BRIGHTNESS_PATTERN,
+             SCREEN_AUTO_BRIGHTNESS_ADJ,
+             SCREEN_BRIGHTNESS_FOR_VR,
++	        TOUCH_PATTERN_OPTIONS,
+             VIBRATE_INPUT_DEVICES,
+             PATTERN_RINGER_STREAMS_AFFECTED,
+             TEXT_AUTO_REPLACE,
+@@ -4192,6 +4203,7 @@ public final class Settings {
+             PUBLIC_SETTINGS.add(SCREEN_BRIGHTNESS);
+             PUBLIC_SETTINGS.add(SCREEN_BRIGHTNESS_FOR_VR);
+             PUBLIC_SETTINGS.add(SCREEN_BRIGHTNESS_PATTERN);
++            PUBLIC_SETTINGS.add(TOUCH_PATTERN_OPTIONS);
+             PUBLIC_SETTINGS.add(PATTERN_RINGER_STREAMS_AFFECTED);
+             PUBLIC_SETTINGS.add(MUTE_STREAMS_AFFECTED);
+             PUBLIC_SETTINGS.add(VIBRATE_ON);
+@@ -4357,6 +4369,7 @@ public final class Settings {
+             VALIDATORS.put(WIFI_STATIC_DNS1, WIFI_STATIC_DNS1_VALIDATOR);
+             VALIDATORS.put(WIFI_STATIC_DNS2, WIFI_STATIC_DNS2_VALIDATOR);
+             VALIDATORS.put(SHOW_BATTERY_PERCENT, SHOW_BATTERY_PERCENT_VALIDATOR);
++            VALIDATORS.put(TOUCH_PATTERN_OPTIONS, TOUCH_PATTERN_OPTIONS_VALIDATOR);
+         }
+ 
+         /**
+diff --git a/services/core/java/com/android/server/touchpattern/TouchPatternService.java b/services/core/java/com/android/server/touchpattern/TouchPatternService.java
+new file pattern 100644
+index 00000000000..4dd3db0df2b
+--- /dev/null
++++ b/services/core/java/com/android/server/touchpattern/TouchPatternService.java
+@@ -0,0 +1,81 @@
++/*
++ * Copyright 2009-2018 Pegatron Corporation. All Rights Reserved.
++ *
++ * Pegatron Corporation. Confidential and Proprietary
++ *
++ * The following software source code ("Software") is strictly confidential and
++ * is proprietary to Pegatron Corporation. ("PEGATRON").  It may only be read,
++ * used, copied, adapted, modified or otherwise dealt with by you if you have
++ * entered into a confidentiality agreement with PEGATRON and then subject to the
++ * terms of that confidentiality agreement and any other applicable agreement
++ * between you and PEGATRON.  If you are in any doubt as to whether you are
++ * entitled to access, read, use, copy, adapt, modify or otherwise deal with
++ * the Software or whether you are entitled to disclose the Software to any
++ * other person you should contact PEGATRON.  If you have not entered into a
++ * confidentiality agreement with PEGATRON granting access to this Software you
++ * should forthwith return all media, copies and printed listings containing
++ * the Software to PEGATRON.
++ *
++ * PEGATRON reserves the right to take legal action against you should you breach
++ * the above provisions.
++ */
++
++package com.android.server.touchpattern;
++
++import android.hardware.ITouchPatternManager;
++import android.content.Context;
++import android.util.Slog;
++
++import com.android.server.SystemService;
++
++public class TouchPatternService extends SystemService {
++    static final String TAG = "TouchPatternService";
++    static final boolean DEBUG = false;
++
++    private final Object mLock = new Object();
++
++    public TouchPatternService(Context context) {
++        super(context);
++	Slog.d(TAG, "TouchPatternService gogogo");
++    }
++
++    @Override
++    public void onStart() {
++        publishBinderService(Context.TOUCH_PATTERN_SERVICE, new BinderService());
++    }
++
++
++    private final class BinderService extends ITouchPatternManager.Stub {
++        @Override // Binder call
++        public int setTouchPattern(int pattern) {
++            return setTouchPatternInternal(pattern);
++        }
++
++        @Override // Binder call
++        public int getTouchPattern() {
++            return getTouchPatternInternal();
++        }
++
++    }
++
++    private int setTouchPatternInternal(int pattern) {
++		int ret = 1;
++        if (DEBUG) {
++            Slog.d(TAG, "Setting Touch Pattern to " + pattern);
++	}
++        synchronized (mLock) {
++                ret = setTouchPattern_native(pattern);
++        }
++	return ret;
++    }
++
++    private int getTouchPatternInternal() {
++        if (DEBUG) {
++            Slog.d(TAG, "get Touch Pattern ");
++	}
++       return getTouchPattern_native();
++    }
++
++    private static native int setTouchPattern_native(int pattern);
++    private static native int getTouchPattern_native();
++}
+diff --git a/services/core/jni/Android.bp b/services/core/jni/Android.bp
+index 89efe12927b..8afd2dcdad7 100644
+--- a/services/core/jni/Android.bp
++++ b/services/core/jni/Android.bp
+@@ -35,6 +35,7 @@ cc_library_static {
+         "com_android_server_locksettings_SyntheticPasswordManager.cpp",
+         "com_android_server_net_NetworkStatsService.cpp",
+         "com_android_server_power_PowerManagerService.cpp",
++	"com_android_server_touchpattern_TouchPatternService.cpp",
+         "com_android_server_SerialService.cpp",
+         "com_android_server_storage_AppFuseBridge.cpp",
+         "com_android_server_SystemServer.cpp",
+@@ -130,6 +131,7 @@ cc_defaults {
+         "android.hardware.vr@1.0",
+         "android.frameworks.schedulerservice@1.0",
+         "android.frameworks.sensorservice@1.0",
++        "vendor.company.hardware.touchpattern@1.0" ,
+     ],
+ 
+     static_libs: [
+diff --git a/services/core/jni/com_android_server_touchpattern_TouchPatternService.cpp b/services/core/jni/com_android_server_touchpattern_TouchPatternService.cpp
+new file pattern 100644
+index 00000000000..7efc798a96b
+--- /dev/null
++++ b/services/core/jni/com_android_server_touchpattern_TouchPatternService.cpp
+@@ -0,0 +1,65 @@
++/*
++ * Copyright 2009-2018 Pegatron Corporation. All Rights Reserved.
++ *
++ * Pegatron Corporation. Confidential and Proprietary
++ *
++ * The following software source code ("Software") is strictly confidential and
++ * is proprietary to Pegatron Corporation. ("PEGATRON").  It may only be read,
++ * used, copied, adapted, modified or otherwise dealt with by you if you have
++ * entered into a confidentiality agreement with PEGATRON and then subject to the
++ * terms of that confidentiality agreement and any other applicable agreement
++ * between you and PEGATRON.  If you are in any doubt as to whether you are
++ * entitled to access, read, use, copy, adapt, modify or otherwise deal with
++ * the Software or whether you are entitled to disclose the Software to any
++ * other person you should contact PEGATRON.  If you have not entered into a
++ * confidentiality agreement with PEGATRON granting access to this Software you
++ * should forthwith return all media, copies and printed listings containing
++ * the Software to PEGATRON.
++ *
++ * PEGATRON reserves the right to take legal action against you should you breach
++ * the above provisions.
++ */
++
++#define LOG_TAG "TouchPatternJNI"
++
++#include <android_runtime/AndroidRuntime.h>
++#include <jni.h>
++#include <nativehelper/JNIHelp.h>
++
++#include <vendor/company/hardware/touchpattern/1.0/ITouchPattern.h>
++#include <utils/misc.h>
++#include <utils/Log.h>
++#include <hardware/hardware.h>
++#include <hidl/HidlSupport.h>
++#include <stdio.h>
++
++namespace android {
++
++using vendor::company::hardware::touchpattern::V1_0::ITouchPattern;
++using android::sp;
++
++static jint setTouchPattern(JNIEnv* env, jobject clazz, jint pattern) {
++    int res=-1;
++    android::sp<ITouchPattern> ser = ITouchPattern::getService();
++    res = ser->setTouchPattern(pattern);
++    return res;
++}
++
++static jint getTouchPattern(JNIEnv* env, jobject clazz) {
++    int res=-1;
++    android::sp<ITouchPattern> ser = ITouchPattern::getService();
++    res = ser->getTouchPattern();
++    return res;
++}
++
++static const JNINativeMethod method_table[] = {
++    { "setTouchPattern_native", "(I)I", (void*)setTouchPattern},
++    { "getTouchPattern_native", "()I", (void*)getTouchPattern},
++};
++
++int register_android_server_touchpattern_TouchPatternService(JNIEnv *env) {
++    return jniRegisterNativeMethods(env, "com/android/server/touchpattern/TouchPatternService",
++            method_table, NELEM(method_table));
++}
++
++}; // namespace android
+diff --git a/services/core/jni/onload.cpp b/services/core/jni/onload.cpp
+index 0ebef37c1f2..a94303d9b42 100644
+--- a/services/core/jni/onload.cpp
++++ b/services/core/jni/onload.cpp
+@@ -57,6 +57,7 @@ int register_android_server_net_NetworkStatsService(JNIEnv* env);
+ #ifdef USE_ARC
+ int register_android_server_ArcVideoService();
+ #endif
++int register_android_server_touchpattern_TouchPatternService(JNIEnv* env);
+ };
+ 
+ using namespace android;
+@@ -107,5 +108,6 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)
+ #ifdef USE_ARC
+     register_android_server_ArcVideoService();
+ #endif
++    register_android_server_touchpattern_TouchPatternService(env);
+     return JNI_VERSION_1_4;
+ }
+diff --git a/services/java/com/android/server/SystemServer.java b/services/java/com/android/server/SystemServer.java
+index 9bd2b105f32..ee73ea47b51 100644
+--- a/services/java/com/android/server/SystemServer.java
++++ b/services/java/com/android/server/SystemServer.java
+@@ -81,6 +81,7 @@ import com.android.server.hdmi.HdmiControlService;
+ import com.android.server.input.InputManagerService;
+ import com.android.server.job.JobSchedulerService;
+ import com.android.server.lights.LightsService;
++import com.android.server.touchpattern.TouchPatternService;
+ import com.android.server.media.MediaResourceMonitorService;
+ import com.android.server.media.MediaRouterService;
+ import com.android.server.media.MediaUpdateService;
+@@ -618,6 +619,10 @@ public final class SystemServer {
+         mSystemServiceManager.startService(LightsService.class);
+         traceEnd();
+ 
++        // Manages touch pattern.
++        traceBeginAndSlog("StartTouchPatternService");
++        mSystemServiceManager.startService(TouchPatternService.class);
++        traceEnd();
+         traceBeginAndSlog("StartSidekickService");
+         // Package manager isn't started yet; need to use SysProp not hardware feature
+         if (SystemProperties.getBoolean("config.enable_sidekick_graphics", false)) {

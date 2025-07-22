@@ -1,0 +1,9 @@
+diff --git a/plat_private/service_contexts b/plat_private/service_contexts
+index b7540dd..06b09f2 100644
+--- a/plat_private/service_contexts
++++ b/plat_private/service_contexts
+@@ -63,3 +63,4 @@ led_manager                                u:object_r:led_manager_service:s0
+ scanner                                    u:object_r:scanner_service:s0
+ battery_manager                            u:object_r:dl_battery_manager_service:s0
+ cradle_manager                             u:object_r:cradle_manager_service:s0
++marco_demo                                 u:object_r:marco_demo_service:s0

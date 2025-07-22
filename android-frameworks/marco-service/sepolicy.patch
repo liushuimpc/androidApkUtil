@@ -1,0 +1,19 @@
+diff --git a/sepolicy/service.te b/sepolicy/service.te
+index d0a0401..1be617a 100644
+--- a/sepolicy/service.te
++++ b/sepolicy/service.te
+@@ -10,3 +10,5 @@ type led_manager_service, app_api_service, system_server_service, service_manage
+ type scanner_service, app_api_service, service_manager_type;
+ type dl_battery_manager_service, app_api_service, system_server_service, service_manager_type;
+ type cradle_manager_service, app_api_service, system_server_service, service_manager_type;
++
++type marco_demo_service, app_api_service, system_server_service, service_manager_type;
+diff --git a/sepolicy/system_server.te b/sepolicy/system_server.te
+index e9909cf..4b58168 100644
+--- a/sepolicy/system_server.te
++++ b/sepolicy/system_server.te
+@@ -39,3 +39,4 @@ allow system_server sysfs_batteryinfo:file { getattr setattr open read write };
+ allow system_server system_data_file:dir getattr;
+ allow system_server proc_last_kmsg:file { open read };
+ 
++allow system_server marco_demo_service:service_manager { add find };

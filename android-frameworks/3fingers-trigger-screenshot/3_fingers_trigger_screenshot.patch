@@ -1,0 +1,191 @@
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index 7232ea171e6..4353271fb70 100644
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -4142,6 +4142,14 @@ public final class Settings {
+          */
+         public static final String SHOW_BATTERY_PERCENT = "status_bar_show_battery_percent";
+ 
++        /**
++         * Setting to determine enable/disable 3 finger screenshot feature.
++         *    0 - Disable this feature
++         *    1 - Enable this feature
++         * @hide
++         */
++        public static final String FINGER_TRIGGER_SCREENSHOT = "finger_trigger_screenshot";
++
+         /** @hide */
+         private static final Validator SHOW_BATTERY_PERCENT_VALIDATOR = BOOLEAN_VALIDATOR;
+ 
+diff --git a/core/java/android/view/ViewGroup.java b/core/java/android/view/ViewGroup.java
+index 9dca8ccb47c..f14ae3e3f9d 100644
+--- a/core/java/android/view/ViewGroup.java
++++ b/core/java/android/view/ViewGroup.java
+@@ -44,6 +44,7 @@ import android.os.Build;
+ import android.os.Bundle;
+ import android.os.Parcelable;
+ import android.os.SystemClock;
++import android.provider.Settings;
+ import android.util.AttributeSet;
+ import android.util.Log;
+ import android.util.Pools;
+@@ -199,6 +200,12 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager
+     @ViewDebug.ExportedProperty(category = "events")
+     private float mLastTouchDownY;
+ 
++    private static final float Y_OFFSET = 400.0f;
++    private float[] downY = new float[3];
++    private float[] upY = new float[3];
++    private float[] matchY = new float[3];
++    private boolean is3Pointer = false;
++
+     // First hover target in the linked list of hover targets.
+     // The hover targets are children which have received ACTION_HOVER_ENTER.
+     // They might not have actually handled the hover event, but we will
+@@ -2544,12 +2551,88 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager
+         return transformedEvent;
+     }
+ 
++    private void parse3FingerScreenshot(MotionEvent ev) {
++        int actionMasked = ev.getActionMasked();
++        int pointerCount = ev.getPointerCount();
++
++        int value = Settings.System.getInt(mContext.getContentResolver(),
++            Settings.System.FINGER_TRIGGER_SCREENSHOT, 0);
++        Log.i("marcooo","FINGER_TRIGGER_SCREENSHOT="+value);
++        if (value != 1) {
++            return ;
++        }
++
++        Log.i("marcooo", "pointerCount = " + pointerCount);
++        if (pointerCount == 3) {
++            switch (actionMasked) {
++            case MotionEvent.ACTION_POINTER_DOWN:
++                Log.i("marcooo", "DOWN--" + ev.getY(0) + ev.getY(1) + ev.getY(2));
++                for (int i = 0; i < pointerCount; i++) {
++                    int pointerId = ev.getPointerId(i);
++                    downY[pointerId] = ev.getY(i);
++                }
++                is3Pointer = true;
++                break;
++            case MotionEvent.ACTION_POINTER_UP:
++                Log.i("marcooo", "UP--" + ev.getY(0) + ev.getY(1) + ev.getY(2));
++                if (is3Pointer) {
++                    // save scroll data
++                    for (int i = 0; i < pointerCount; i++) {
++                        int pointerId = ev.getPointerId(i);
++                        upY[pointerId] = ev.getY(i);
++                        matchY[pointerId] = Math.abs(upY[pointerId] - downY[pointerId]);
++                    }
++                } else {
++                    clearArrayData(downY);
++                    clearArrayData(upY);
++                    clearArrayData(matchY);
++                }
++                break;
++            default:
++                break;
++            }
++
++            boolean[] flag = new boolean[] {
++                    false, false, false,
++            };
++
++            for (int i = 0; i < pointerCount; i++) {
++                int pointerId = ev.getPointerId(i);
++                // Compare with Y_OFFSET
++                if (matchY[pointerId] > Y_OFFSET) {
++                    flag[i] = true;
++                    matchY[pointerId] = 0;
++                }
++            }
++
++            if (flag[0] && flag[1] && flag[2]) {
++                Log.i("marcooo", "\n\n===================to send broadcast===================\n\n");
++                Intent intent = new Intent("com.marco.screenshot");
++                //Send broadcast to PhoneWindowManager to cature screen
++                getContext().sendBroadcast(intent);
++                Log.d("marcooo", "Intercept the key Three finger to screenshot");
++            }
++        } else {
++            is3Pointer = false;
++        }
++    }
++
++    private void clearArrayData(float[] data) {
++        for (int i = 0; i < 3; i++) {
++            data[i] = 0.0f;
++        }
++    }
++
+     @Override
+     public boolean dispatchTouchEvent(MotionEvent ev) {
+         if (mInputEventConsistencyVerifier != null) {
+             mInputEventConsistencyVerifier.onTouchEvent(ev, 1);
+         }
+ 
++        Log.i("marcooo", "parse3FingerScreenshot()1");
++        parse3FingerScreenshot(ev);
++        Log.i("marcooo", "parse3FingerScreenshot()2");
++
+         // If the event targets the accessibility focused view and this is it, start
+         // normal event dispatch. Maybe a descendant is what will handle the click.
+         if (ev.isTargetAccessibilityFocus() && isAccessibilityFocusedViewOrHost()) {
+@@ -3256,6 +3339,13 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager
+                 && isOnScrollbarThumb(ev.getX(), ev.getY())) {
+             return true;
+         }
++
++        if (ev.getPointerCount() == 3
++                && Settings.System.getInt(mContext.getContentResolver(),
++                    Settings.System.FINGER_TRIGGER_SCREENSHOT, 0) == 1) {
++            return true;
++        }
++
+         return false;
+     }
+ 
+diff --git a/packages/SettingsProvider/res/values/defaults.xml b/packages/SettingsProvider/res/values/defaults.xml
+index 9baecd729f8..289c5daf74e 100644
+--- a/packages/SettingsProvider/res/values/defaults.xml
++++ b/packages/SettingsProvider/res/values/defaults.xml
+@@ -228,4 +228,13 @@
++
++    <integer name="finger_trigger_screenshot">0</integer>
++
+ </resources>
+diff --git a/services/core/java/com/android/server/policy/PhoneWindowManager.java b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+index 90831c279b5..2688ff34adc 100644
+--- a/services/core/java/com/android/server/policy/PhoneWindowManager.java
++++ b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+@@ -2335,6 +2335,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         filter.addAction(Intent.ACTION_DREAMING_STOPPED);
+         context.registerReceiver(mDreamReceiver, filter);
+ 
++        // register for 3 fingers screenshot broadcast
++        filter = new IntentFilter();
++        filter.addAction("com.marco.screenshot");
++        context.registerReceiver(mScreenshotReceiver, filter);
++
+         // monitor for system gestures
+         // TODO(multi-display): Needs to be display specific.
+         mSystemGestures = new SystemGesturesPointerEventListener(context,
+@@ -7265,6 +7270,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         }
+     };
+ 
++    BroadcastReceiver mScreenshotReceiver = new BroadcastReceiver() {
++        @Override
++        public void onReceive(Context context, Intent intent) {
++
++            if ("com.marco.screenshot".equals(intent.getAction())) {
++                Log.i("marcooo", "PhoneWindowManager, begin-----SCREENSHOT=");
++                mScreenshotRunnable.setScreenshotType(TAKE_SCREENSHOT_FULLSCREEN);
++                mHandler.post(mScreenshotRunnable);
++            }
++        }
++    };
++
+     BroadcastReceiver mMultiuserReceiver = new BroadcastReceiver() {
+         @Override
+         public void onReceive(Context context, Intent intent) {

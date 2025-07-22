@@ -1,0 +1,293 @@
+diff --git a/Android.bp b/Android.bp
+index 339130fcc84..e62d757b872 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -402,6 +402,7 @@ java_library {
+         "core/java/com/android/internal/widget/ICheckCredentialProgressCallback.aidl",
+         "core/java/com/android/internal/widget/ILockSettings.aidl",
+         "core/java/com/android/internal/widget/IRemoteViewsFactory.aidl",
++        "core/java/android/os/IMarcodemoManager.aidl",
+         "keystore/java/android/security/IKeyChainAliasCallback.aidl",
+         "keystore/java/android/security/IKeyChainService.aidl",
+         "location/java/android/location/IBatchedLocationCallback.aidl",
+diff --git a/api/current.txt b/api/current.txt
+index 813744938f8..29465978419 100644
+--- a/api/current.txt
++++ b/api/current.txt
+@@ -32643,6 +32643,11 @@ package android.os {
+     method public void setMessageLogging(android.util.Printer);
+   }
+ 
++  public class MarcodemoManager {
++    ctor public MarcodemoManager(android.content.Context, android.os.IMarcodemoManager);
++    method public void hello(java.lang.String);
++  }
++
+   public class MemoryFile {
+     ctor public MemoryFile(java.lang.String, int) throws java.io.IOException;
+     method public deprecated synchronized boolean allowPurging(boolean) throws java.io.IOException;
+diff --git a/api/system-current.txt b/api/system-current.txt
+index 3b4a0be6cd1..d724d1aa4a2 100644
+--- a/api/system-current.txt
++++ b/api/system-current.txt
+@@ -854,6 +854,7 @@ package android.content {
+     field public static final java.lang.String CONTEXTHUB_SERVICE = "contexthub";
+     field public static final java.lang.String EUICC_CARD_SERVICE = "euicc_card";
+     field public static final java.lang.String HDMI_CONTROL_SERVICE = "hdmi_control";
++    field public static final java.lang.String MARCODEMO_SERVICE = "marco_demo";
+     field public static final java.lang.String NETWORK_SCORE_SERVICE = "network_score";
+     field public static final java.lang.String OEM_LOCK_SERVICE = "oem_lock";
+     field public static final java.lang.String PERSISTENT_DATA_BLOCK_SERVICE = "persistent_data_block";
+diff --git a/core/java/android/app/SystemServiceRegistry.java b/core/java/android/app/SystemServiceRegistry.java
+index 149af262441..705c02eafbf 100644
+--- a/core/java/android/app/SystemServiceRegistry.java
++++ b/core/java/android/app/SystemServiceRegistry.java
+@@ -154,6 +154,8 @@ import android.view.autofill.IAutoFillManager;
+ import android.view.inputmethod.InputMethodManager;
+ import android.view.textclassifier.TextClassificationManager;
+ import android.view.textservice.TextServicesManager;
++import android.os.MarcodemoManager;
++import android.os.IMarcodemoManager;
+ 
+ import com.android.internal.app.IAppOpsService;
+ import com.android.internal.app.IBatteryStats;
+@@ -1027,6 +1029,17 @@ public final class SystemServiceRegistry {
+                                         Context.DEVICE_IDLE_CONTROLLER));
+                         return new DeviceIdleManager(ctx.getOuterContext(), service);
+                     }});
++
++        registerService(Context.MARCODEMO_SERVICE, MarcodemoManager.class,
++                new CachedServiceFetcher<MarcodemoManager>() {
++            @Override
++            public MarcodemoManager createService(ContextImpl ctx) throws ServiceNotFoundException {
++                IBinder b = ServiceManager.getServiceOrThrow(Context.MARCODEMO_SERVICE);
++                IMarcodemoManager service = IMarcodemoManager.Stub.asInterface(b);
++                return new MarcodemoManager(ctx.getOuterContext(), service);
++            }});
++
++
+     }
+ 
+     /**
+diff --git a/core/java/android/content/Context.java b/core/java/android/content/Context.java
+index 90a94ee7608..28dd476398a 100644
+--- a/core/java/android/content/Context.java
++++ b/core/java/android/content/Context.java
+@@ -4209,6 +4209,17 @@ public abstract class Context {
+     @SystemApi
+     public static final String SECURE_ELEMENT_SERVICE = "secure_element";
+ 
++    /**
++     * Use with {@link #getSystemService(String)} to retrieve a
++     * {@link android.os.MarcodemoManager} for accessing the system update
++     * manager service.
++     *
++     * @see #getSystemService(String)
++     * @hide
++     */
++    @SystemApi
++    public static final String MARCODEMO_SERVICE = "marco_demo";
++
+     /**
+      * Determine whether the given permission is allowed for a particular
+      * process and user ID running in the system.
+diff --git a/core/java/android/os/IMarcodemoManager.aidl b/core/java/android/os/IMarcodemoManager.aidl
+new file mode 100644
+index 00000000000..9ec825e3df9
+--- /dev/null
++++ b/core/java/android/os/IMarcodemoManager.aidl
+@@ -0,0 +1,7 @@
++package android.os;
++
++/** @hide */
++
++interface IMarcodemoManager {
++    void hello(in String string);
++}
+diff --git a/core/java/android/os/MarcodemoManager.java b/core/java/android/os/MarcodemoManager.java
+new file mode 100644
+index 00000000000..dad4986b023
+--- /dev/null
++++ b/core/java/android/os/MarcodemoManager.java
+@@ -0,0 +1,26 @@
++package android.os;
++
++import android.content.Context;
++import android.util.Log;
++
++import android.os.IMarcodemoManager;
++
++public class MarcodemoManager {
++    private static String TAG = "MarcodemoManager";
++
++    Context mContext;
++    IMarcodemoManager mSelfManager;
++
++    public MarcodemoManager(Context context, IMarcodemoManager selfManager) {
++        mContext = context;
++        mSelfManager = selfManager;
++    }
++
++    public void hello(String string) {
++        try {
++            mSelfManager.hello(string);
++        } catch (RemoteException e) {
++            Log.i(TAG, "RemoteException" + e.toString());
++        }
++    }
++}
+diff --git a/services/core/java/com/android/server/MarcodemoManagerService.java b/services/core/java/com/android/server/MarcodemoManagerService.java
+new file mode 100644
+index 00000000000..4b4598d3977
+--- /dev/null
++++ b/services/core/java/com/android/server/MarcodemoManagerService.java
+@@ -0,0 +1,30 @@
++package com.android.server;
++
++import android.content.Context;
++import android.system.Os;
++import android.util.Slog;
++
++import android.os.IMarcodemoManager;
++
++public final class MarcodemoManagerService extends IMarcodemoManager.Stub {
++    private static final String TAG = "MarcodemoManagerService";
++    private static final boolean DEBUG = true;
++
++    private static final Object sRequestLock = new Object();
++
++    private Context mContext;
++
++    public MarcodemoManagerService(Context context) {
++        mContext = context;
++    }
++
++    @Override // Binder call
++    public void hello(String string) {
++        if (DEBUG) Slog.d(TAG, "======hello======");
++        synchronized (sRequestLock) {
++            hello_native();
++        }
++    }
++
++    public native void hello_native();
++}
+diff --git a/services/core/jni/Android.bp b/services/core/jni/Android.bp
+index 89efe12927b..ec207aeff5c 100644
+--- a/services/core/jni/Android.bp
++++ b/services/core/jni/Android.bp
+@@ -50,6 +50,7 @@ cc_library_static {
+         "com_android_server_PersistentDataBlockService.cpp",
+         "com_android_server_GraphicsStatsService.cpp",
+         "onload.cpp",
++        "com_android_server_MarcodemoManager.cpp",
+     ],
+ 
+     include_dirs: [
+diff --git a/services/core/jni/com_android_server_MarcodemoManager.cpp b/services/core/jni/com_android_server_MarcodemoManager.cpp
+new file mode 100644
+index 00000000000..e51ce9d73bb
+--- /dev/null
++++ b/services/core/jni/com_android_server_MarcodemoManager.cpp
+@@ -0,0 +1,44 @@
++#include "jni.h"
++#include <stdio.h>
++#include <stdlib.h>
++#include "utils/Log.h"
++#include "android_runtime/Log.h"
++
++#include <android_runtime/AndroidRuntime.h>
++
++#include <nativehelper/JNIHelp.h>
++
++#define TAG "marcodemonative"
++
++namespace android {
++
++static void helloNative(JNIEnv* env, jobject thiz)
++{
++    ALOGD("Native helloNative");
++}
++
++static const JNINativeMethod method_table[] = {
++    {"hello_native", "()V", (void*)helloNative},
++};
++
++static const char *classPathName = "com/android/server/MarcodemoManagerService";
++
++int register_android_server_MarcodemoManager(JNIEnv *env)
++{
++    jclass clazz = env->FindClass("com/android/server/MarcodemoManagerService");
++    if (clazz == NULL) {
++        ALOGE("Can't find com/android/server/MarcodemoManagerService");
++        return -1;
++    }
++
++/*    clazz = env->FindClass("android/os/ParcelFileDescriptor");
++    LOG_FATAL_IF(clazz == NULL, "Unable to find class android.os.ParcelFileDescriptor");
++    gParcelFileDescriptorOffsets.mClass = (jclass) env->NewGlobalRef(clazz);
++    gParcelFileDescriptorOffsets.mConstructor = env->GetMethodID(clazz, "<init>", "(Ljava/io/FileDescriptor;)V");
++    LOG_FATAL_IF(gParcelFileDescriptorOffsets.mConstructor == NULL,
++                 "Unable to find constructor for android.os.ParcelFileDescriptor");
++*/
++    return jniRegisterNativeMethods(env, classPathName, method_table, NELEM(method_table));
++}
++
++}; // namespace android
+diff --git a/services/core/jni/onload.cpp b/services/core/jni/onload.cpp
+index 0ebef37c1f2..c4dc4579bb4 100644
+--- a/services/core/jni/onload.cpp
++++ b/services/core/jni/onload.cpp
+@@ -36,6 +36,7 @@ int register_android_server_SerialService(JNIEnv* env);
+ int register_android_server_SystemServer(JNIEnv* env);
+ int register_android_server_UsbAlsaJackDetector(JNIEnv* env);
+ int register_android_server_UsbDeviceManager(JNIEnv* env);
++int register_android_server_MarcodemoManager(JNIEnv* env);
+ int register_android_server_UsbMidiDevice(JNIEnv* env);
+ int register_android_server_UsbHostManager(JNIEnv* env);
+ int register_android_server_vr_VrManagerService(JNIEnv* env);
+@@ -82,6 +83,7 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)
+     register_android_server_LightsService(env);
+     register_android_server_AlarmManagerService(env);
+     register_android_server_UsbDeviceManager(env);
++    register_android_server_MarcodemoManager(env);
+     register_android_server_UsbMidiDevice(env);
+     register_android_server_UsbAlsaJackDetector(env);
+     register_android_server_UsbHostManager(env);
+diff --git a/services/java/com/android/server/SystemServer.java b/services/java/com/android/server/SystemServer.java
+index 49b1819b4df..b3c6df6578b 100644
+--- a/services/java/com/android/server/SystemServer.java
++++ b/services/java/com/android/server/SystemServer.java
+@@ -120,6 +120,7 @@ import com.android.server.usage.UsageStatsService;
+ import com.android.server.vr.VrManagerService;
+ import com.android.server.webkit.WebViewUpdateService;
+ import com.android.server.wm.WindowManagerService;
++import com.android.server.MarcodemoManagerService;
+ 
+ import com.mediatek.server.MtkSystemServer;
+ 
+@@ -794,6 +795,7 @@ public final class SystemServer {
+         ConsumerIrService consumerIr = null;
+         MmsServiceBroker mmsService = null;
+         HardwarePropertiesManagerService hardwarePropertiesService = null;
++        MarcodemoManagerService marcodemoManagerService = null;
+ 
+         boolean disableSystemTextClassifier = SystemProperties.getBoolean(
+                 "config.disable_systemtextclassifier", false);
+@@ -1442,6 +1444,16 @@ public final class SystemServer {
+             }
+             traceEnd();
+ 
++            traceBeginAndSlog("StartHardwarePropertiesManagerService");
++            try {
++                marcodemoManagerService = new MarcodemoManagerService(context);
++                ServiceManager.addService(Context.MARCODEMO_SERVICE,
++                    marcodemoManagerService);
++            } catch (Throwable e) {
++                Slog.e(TAG, "Failure starting MarcodemoManagerService", e);
++            }
++            traceEnd();
++
+             traceBeginAndSlog("StartTwilightService");
+             mSystemServiceManager.startService(TwilightService.class);
+             traceEnd();
