@@ -1,0 +1,720 @@
+diff --git a/res/drawable/picture.png b/res/drawable/picture.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..268eba0dde5446886a0040307c419b609685ffac
+GIT binary patch
+literal 486
+zcmV<C0U7>@P)<h;3K|Lk000e1NJLTq001xm001xu1ONa4{R=S+00004XF*Lt006O%
+z3;baP0000WV@Og>004R>004l5008;`004mK004C`008P>0026e000+ooVrmw00002
+zVoOIv0RM-N%)bBt0b@x-K~z}7V_+BsLjmM7{Ko<Fs9}66!#|uB`~%8T2*Mct;4~ft
+z|1gA7V!S)UPrSy1;7_0`B7q#k8iv;d4I~6#GpuD$#%8=M!&{0ChrzcDGME;urJC^|
+zxC+yPPgJ$w1EvN4sSF331wR;8FvK(HGKd4AE|9f?U;-w|g0&2a80wW6)=|fTe+<<)
+z@(m+H4W43zXbZ~VDwr6ofCWP+gC)>t7$~RIf{k#)f*9_?MQ<|%z<sfq5(|DXC_rUv
+zFaoX;Dx(NgMYaVi;jYIPH~vuBRpeU`2@Qt3SY>ZPgD;AF3sk`}CO9L~5G=1wz6CsZ
+zT!`=??;y57ov0wv7{rlG^JMy)L5pBU)5g*6Afu?bL;a!x1Y3~Q=m3MoA4noV>kufe
+zX<p$VSD9K291NU5lIm6F&}dbBq;<n<9aSw@gK2>}!#k=O{|;J{U}?Tn-a`F|tNA_(
+cM#0Dh09$QzD|;f|VE_OC07*qoM6N<$g2F(!WdHyG
+
+literal 0
+HcmV?d00001
+
+diff --git a/res/layout/indicator_container2.xml b/res/layout/indicator_container2.xml
+new file mode 100644
+index 0000000..afd1bef
+--- /dev/null
++++ b/res/layout/indicator_container2.xml
+@@ -0,0 +1,29 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++  ~ Copyright (C) 2019 The Android Open Source Project
++  ~
++  ~ Licensed under the Apache License, Version 2.0 (the "License");
++  ~ you may not use this file except in compliance with the License.
++  ~ You may obtain a copy of the License at
++  ~
++  ~      http://www.apache.org/licenses/LICENSE-2.0
++  ~
++  ~ Unless required by applicable law or agreed to in writing, software
++  ~ distributed under the License is distributed on an "AS IS" BASIS,
++  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++  ~ See the License for the specific language governing permissions and
++  ~ limitations under the License
++  -->
++
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++              android:orientation="horizontal"
++              android:layout_width="match_parent"
++              android:layout_height="match_parent">
++
++    <ImageView
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:id="@+id/indicator2">
++    </ImageView>
++
++</LinearLayout>
+diff --git a/res/values/config.xml b/res/values/config.xml
+index 0c582d9..54981b7 100644
+--- a/res/values/config.xml
++++ b/res/values/config.xml
+@@ -289,6 +289,9 @@
+     <!-- Enable the default volume dialog -->
+     <bool name="enable_volume_ui">true</bool>
+ 
++    <!-- Enable the default border ui -->
++    <bool name="enable_border_ui">true</bool>
++
+     <!-- Enable the default volume level warning dialog -->
+     <bool name="enable_safety_warning">true</bool>
+ 
+diff --git a/src/com/android/systemui/Dependency.java b/src/com/android/systemui/Dependency.java
+index 1270bd8..c9a2f7e 100644
+--- a/src/com/android/systemui/Dependency.java
++++ b/src/com/android/systemui/Dependency.java
+@@ -41,6 +41,8 @@ import com.android.systemui.accessibility.floatingmenu.AccessibilityFloatingMenu
+ import com.android.systemui.animation.DialogLaunchAnimator;
+ import com.android.systemui.appops.AppOpsController;
+ import com.android.systemui.assist.AssistManager;
++import com.android.systemui.border.BorderUI;
++import com.android.systemui.border.BorderComponent;
+ import com.android.systemui.broadcast.BroadcastDispatcher;
+ import com.android.systemui.colorextraction.SysuiColorExtractor;
+ import com.android.systemui.dagger.SysUISingleton;
+@@ -302,6 +304,7 @@ public class Dependency {
+     @Inject Lazy<AccessibilityButtonModeObserver> mAccessibilityButtonModeObserver;
+     @Inject Lazy<AccessibilityButtonTargetsObserver> mAccessibilityButtonListController;
+     @Inject Lazy<EnhancedEstimates> mEnhancedEstimates;
++    @Inject Lazy<BorderComponent> mBorderComponent;
+     @Inject Lazy<VibratorHelper> mVibratorHelper;
+     @Inject Lazy<IStatusBarService> mIStatusBarService;
+     @Inject Lazy<DisplayMetrics> mDisplayMetrics;
+@@ -505,6 +508,8 @@ public class Dependency {
+ 
+         mProviders.put(EnhancedEstimates.class, mEnhancedEstimates::get);
+ 
++        mProviders.put(BorderComponent.class, mBorderComponent::get);
++
+         mProviders.put(VibratorHelper.class, mVibratorHelper::get);
+ 
+         mProviders.put(IStatusBarService.class, mIStatusBarService::get);
+diff --git a/src/com/android/systemui/border/BorderComponent.java b/src/com/android/systemui/border/BorderComponent.java
+new file mode 100644
+index 0000000..3daed9a
+--- /dev/null
++++ b/src/com/android/systemui/border/BorderComponent.java
+@@ -0,0 +1,24 @@
++package com.android.systemui.border;
++
++public interface BorderComponent {
++
++    /**
++     * Returns a boolean indicating if the border notification should be used.
++     */
++    boolean isBorderNotificationEnabled();
++
++    /**
++     * Returns a long indicating the width.
++     */
++    long getWidth();
++
++    /**
++     * Returns a long indicating the height.
++     */
++    long getHeight();
++
++    /**
++     * Returns a float indicating the alpha.
++     */
++    long getAlpha();
++}
+diff --git a/src/com/android/systemui/border/BorderComponentImpl.java b/src/com/android/systemui/border/BorderComponentImpl.java
+new file mode 100644
+index 0000000..da27aef
+--- /dev/null
++++ b/src/com/android/systemui/border/BorderComponentImpl.java
+@@ -0,0 +1,35 @@
++package com.android.systemui.border;
++
++import android.util.Log;
++
++import com.android.systemui.dagger.SysUISingleton;
++
++import javax.inject.Inject;
++
++@SysUISingleton
++public class BorderComponentImpl implements BorderComponent {
++
++    @Inject
++    public BorderComponentImpl() {
++    }
++
++    @Override
++    public boolean isBorderNotificationEnabled() {
++        return true;
++    }
++
++    @Override
++    public long getWidth() {
++        return 10;
++    }
++
++    @Override
++    public long getHeight() {
++        return 200;
++    }
++
++    @Override
++    public long getAlpha() {
++        return 1;
++    }
++}
+diff --git a/src/com/android/systemui/border/BorderUI.java b/src/com/android/systemui/border/BorderUI.java
+new file mode 100644
+index 0000000..f965f2f
+--- /dev/null
++++ b/src/com/android/systemui/border/BorderUI.java
+@@ -0,0 +1,215 @@
++/*
++ * Copyright (C) 2014 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.systemui.border;
++
++import android.app.Activity;
++import android.content.BroadcastReceiver;
++import android.content.Context;
++import android.content.ContentResolver;
++import android.content.ContextWrapper;
++import android.content.Intent;
++import android.content.IntentFilter;
++import android.content.pm.ActivityInfo;
++import android.content.res.Configuration;
++import android.database.ContentObserver;
++import android.os.BatteryManager;
++import android.os.Handler;
++import android.os.IThermalEventListener;
++import android.os.IThermalService;
++import android.os.PowerManager;
++import android.os.RemoteException;
++import android.os.ServiceManager;
++import android.os.SystemClock;
++import android.os.Temperature;
++import android.os.UserHandle;
++import android.provider.Settings;
++import android.text.format.DateUtils;
++import android.util.Log;
++import android.util.Slog;
++
++import com.android.internal.annotations.VisibleForTesting;
++import com.android.systemui.CoreStartable;
++import com.android.systemui.R;
++import com.android.systemui.broadcast.BroadcastDispatcher;
++import com.android.systemui.dagger.SysUISingleton;
++import com.android.systemui.qs.tiles.DndTile;
++import com.android.systemui.statusbar.CommandQueue;
++import com.android.systemui.statusbar.phone.CentralSurfaces;
++
++import dagger.Lazy;
++import com.mediatek.provider.MtkSettingsExt;
++
++import java.io.PrintWriter;
++import java.util.Arrays;
++import java.util.Optional;
++import java.util.concurrent.Future;
++
++import javax.inject.Inject;
++
++// From MtkSettings
++import android.os.Looper;
++import android.provider.Settings;
++import android.view.WindowManager;
++import android.widget.LinearLayout;
++import com.android.internal.policy.PhoneWindow;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.view.WindowManager.LayoutParams;
++import android.graphics.PixelFormat;
++import android.os.Message;
++
++@SysUISingleton
++public class BorderUI extends CoreStartable {
++    public static final String TAG = "BorderUI";
++    private static boolean LOGD = Log.isLoggable(TAG, Log.DEBUG);
++
++    public static final int MSG_REMOVE_VIEW = 1;
++
++    public static final int DEF_WIDTH = 15;
++    public static final int REMOVE_DELAY_MS = 1000;
++
++    private boolean mEnabled;
++    private final BorderComponent mBorderComponent;
++
++    private WindowManager mWindowManager;
++    private IndicatorView2 mIndicatorView;
++    private LinearLayout mLinearLayout;
++
++    private float[] mBackGestureInsetScales;
++    private float mDefaultBackGestureInset;
++
++    private ContentResolver mContentResolver;
++    private ContentObserver mSettingsObserver;
++
++    private final Handler mHandler = new Handler() {
++        @Override
++        public void handleMessage(Message msg) {
++            switch (msg.what) {
++                case MSG_REMOVE_VIEW:
++                    Log.d(TAG, "handleMessage MSG_REMOVE_VIEW");
++                    dismissBorder();
++                    Settings.Global.putInt(mContentResolver, Settings.Global.WIFI_DISPLAY_ON, 0);
++                    break;
++                default:
++                    break;
++            }
++        }
++    };
++
++    @Inject
++    public BorderUI(Context context, BorderComponent borderComponent) {
++        super(context);
++
++        mBorderComponent = borderComponent;
++        Log.i(TAG, "create BorderUI()");
++    }
++
++    @Override
++    public void start() {
++        Log.i(TAG, "BorderUI start()1");
++        boolean enableBorderUi = mContext.getResources().getBoolean(R.bool.enable_border_ui);
++        if (!enableBorderUi) return;
++
++        Log.i(TAG, "BorderUI start()2");
++        setDefaultBorderController();
++        initResource();
++        initMonitor();
++    }
++
++    private void initResource() {
++        mDefaultBackGestureInset = 60;
++    }
++
++    private void initMonitor() {
++        Log.i(TAG, "initMonitor()");
++        mContentResolver = mContext.getContentResolver();
++        mSettingsObserver = new ContentObserver(mHandler) {
++            @Override
++            public void onChange(boolean selfChange) {
++                Log.i(TAG, "onChange(), selfChange=" + selfChange);
++                int value = Settings.Global.getInt(mContentResolver, Settings.Global.WIFI_DISPLAY_ON, -1);
++                Log.i(TAG, "contentObserver triggered, value=" + value);
++                if (value == 0) {
++                    return;
++                }
++                mHandler.removeMessages(MSG_REMOVE_VIEW);
++                mIndicatorView = new IndicatorView2(mContext);
++                if (mIndicatorView != null) {
++                    Log.i(TAG, "contentObserver, showing, sendMessageDelayed");
++                    mIndicatorView.setIndicatorWidth(value, true);
++                    mIndicatorView.show2();
++
++                    mHandler.sendMessageDelayed(mHandler.obtainMessage(
++                        MSG_REMOVE_VIEW, 0, 0), REMOVE_DELAY_MS);
++                }
++            }
++        };
++        mContentResolver.registerContentObserver(
++                Settings.Global.getUriFor(Settings.Global.WIFI_DISPLAY_ON), false,
++                mSettingsObserver);
++
++        int v = Settings.Global.getInt(mContentResolver, Settings.Global.WIFI_DISPLAY_ON, -1);
++        Log.i(TAG, "WIFI_DISPLAY_ON first value=" + v);
++    }
++
++    private void showBorder() {
++        mIndicatorView = new IndicatorView2(mContext);
++        if (mIndicatorView != null) {
++            Log.i(TAG, "contentObserver, showing, sendMessageDelayed");
++            mIndicatorView.setIndicatorWidth(DEF_WIDTH, true);
++            mIndicatorView.show();
++
++            mHandler.sendMessageDelayed(
++                mHandler.obtainMessage(MSG_REMOVE_VIEW, 0, 0),
++                REMOVE_DELAY_MS);
++        }
++    }
++
++    private void dismissBorder() {
++        Log.i(TAG, "dismissBorder in1");
++
++        if (mIndicatorView != null) {
++            Log.i(TAG, "dismissBorder in2");
++            mIndicatorView.dismiss(false);
++            mIndicatorView = null;
++        }
++    }
++
++    @Override
++    protected void onConfigurationChanged(Configuration newConfig) {
++        super.onConfigurationChanged(newConfig);
++        Log.i(TAG, "onConfigurationChanged, mEnabled=" + mEnabled);
++
++        if (!mEnabled) return;
++    }
++
++    @Override
++    public void dump(PrintWriter pw, String[] args) {
++        pw.print("mEnabled="); pw.println(mEnabled);
++        Log.i(TAG, "dump, mEnabled=" + mEnabled);
++
++        if (!mEnabled) return;
++    }
++
++    private void setDefaultBorderController() {
++        Log.i(TAG, "setDefaultBorderController, mEnabled=" + mEnabled);
++
++        DndTile.setVisible(mContext, true);
++        if (LOGD) Log.d(TAG, "Registering default border controller");
++    }
++}
+diff --git a/src/com/android/systemui/border/IndicatorView2.java b/src/com/android/systemui/border/IndicatorView2.java
+new file mode 100644
+index 0000000..8c8f656
+--- /dev/null
++++ b/src/com/android/systemui/border/IndicatorView2.java
+@@ -0,0 +1,173 @@
++/*
++ * Copyright (C) 2019 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.systemui.border;
++
++import android.content.Context;
++import android.content.res.TypedArray;
++import android.graphics.PixelFormat;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.view.WindowManager;
++import android.widget.ImageView;
++import android.widget.LinearLayout;
++import android.os.Binder;
++import android.os.IBinder;
++import android.view.WindowManager;
++import android.os.Message;
++
++import com.android.systemui.R;
++import android.util.Log;
++
++/**
++ * A linear layout containing indicators.
++ */
++public class IndicatorView2 extends LinearLayout {
++    private final static String TAG = "IndicatorView2";
++    private final IBinder mWindowToken = new Binder();
++    private ViewGroup mLayout;
++    private ImageView mIndicator;
++    private final WindowManager mWindowManager;
++    private boolean mDismissing;
++
++    public IndicatorView2(Context context) {
++        super(context);
++
++        mWindowManager = mContext.getSystemService(WindowManager.class);
++        LayoutInflater layoutInflater = LayoutInflater.from(mContext);
++        mLayout = (ViewGroup) layoutInflater.inflate(R.layout.indicator_container2,
++                this, true);
++
++        mIndicator = mLayout.findViewById(R.id.indicator2);
++        mIndicator.setImageResource(R.drawable.picture);
++
++        int visibility = getSystemUiVisibility()
++                | View.SYSTEM_UI_FLAG_IMMERSIVE
++                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
++                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
++                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
++                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
++                | View.SYSTEM_UI_FLAG_FULLSCREEN;
++
++        TypedArray a = mContext.obtainStyledAttributes(new int[] {1, 1 });
++                // android.R.attr.windowLightNavigationBar,
++                // android.R.attr.windowLightStatusBar});
++        if (a.getBoolean(0, false)) {
++            visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
++        }
++        if (a.getBoolean(1, false)) {
++            visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
++        }
++        a.recycle();
++
++        setSystemUiVisibility(visibility);
++        mDismissing = false;
++    }
++
++    public void setIndicatorWidth(int width, boolean leftIndicator) {
++    }
++
++    public WindowManager.LayoutParams getLayoutParams(
++            WindowManager.LayoutParams parentWindowAttributes) {
++        final WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
++                ViewGroup.LayoutParams.MATCH_PARENT,
++                ViewGroup.LayoutParams.MATCH_PARENT,
++                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
++                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
++                PixelFormat.TRANSLUCENT);
++        lp.setTitle("IndicatorView2");
++        lp.token = mWindowToken;
++        return lp;
++    }
++
++    private void removeView() {
++        if (mDismissing) {
++            Log.i(TAG, "removeView(), mDismissing, remove");
++            setVisibility(View.INVISIBLE);
++            mWindowManager.removeView(IndicatorView2.this);
++        } else {
++            Log.i(TAG, "removeView(), mDismissing=false, NO remove");
++        }
++    }
++
++    public void show() {
++        mDismissing = false;
++        setAlpha(1f);
++        setVisibility(View.VISIBLE);
++        mWindowManager.addView(this, getLayoutParams(mWindowToken));
++    }
++
++    public void show2() {
++        mDismissing = false;
++        setAlpha(1f);
++        setVisibility(View.VISIBLE);
++        mWindowManager.addView(this, getLayoutParams2(mWindowToken));
++    }
++
++    public void dismiss(boolean animated) {
++        if (getParent() == null) {
++            return;
++        }
++
++        mDismissing = true;
++
++        if (animated) {
++        //     postOnAnimation(mFadeOutAnimator::start);
++            Log.i(TAG, "dismiss-true");
++        } else {
++            Log.i(TAG, "dismiss-false");
++            removeView();
++        }
++    }
++
++    /**
++     * @param windowToken token for the window
++     */
++    private WindowManager.LayoutParams getLayoutParams2(IBinder windowToken) {
++        final WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
++                ViewGroup.LayoutParams.MATCH_PARENT,
++                ViewGroup.LayoutParams.MATCH_PARENT,
++                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
++                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
++                PixelFormat.TRANSLUCENT);
++        lp.privateFlags |= WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS;
++        lp.setTitle("BorderUI-view2");
++        lp.token = windowToken;
++        return lp;
++    }
++
++    /**
++     * @param windowToken token for the window
++     */
++    private WindowManager.LayoutParams getLayoutParams(IBinder windowToken) {
++        int copiedFlags = WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
++        final WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
++                ViewGroup.LayoutParams.MATCH_PARENT,
++                ViewGroup.LayoutParams.MATCH_PARENT,
++                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
++                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
++                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
++                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
++                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
++                PixelFormat.TRANSLUCENT);
++
++        lp.privateFlags |= WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS;
++        lp.setTitle("BorderUI-view1");
++        lp.token = windowToken;
++        return lp;
++    }
++}
+diff --git a/src/com/android/systemui/border/SystemNavigationPreferenceController.java b/src/com/android/systemui/border/SystemNavigationPreferenceController.java
+new file mode 100644
+index 0000000..30d3585
+--- /dev/null
++++ b/src/com/android/systemui/border/SystemNavigationPreferenceController.java
+@@ -0,0 +1,39 @@
++/*
++ * Copyright (C) 2019 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.systemui.border;
++
++import static android.view.WindowManagerPolicyConstants.NAV_BAR_MODE_2BUTTON;
++import static android.view.WindowManagerPolicyConstants.NAV_BAR_MODE_GESTURAL;
++
++import android.content.ComponentName;
++import android.content.Context;
++import android.content.Intent;
++import android.content.pm.PackageManager;
++
++// import com.android.settings.R;
++// import com.android.settings.core.BasePreferenceController;
++import android.util.Log;
++
++public class SystemNavigationPreferenceController {
++    private final String TAG = "SystemNavigationPreferenceController";
++    static final String PREF_KEY_SYSTEM_NAVIGATION = "gesture_system_navigation";
++    private static final String ACTION_QUICKSTEP = "android.intent.action.QUICKSTEP_SERVICE";
++
++    public SystemNavigationPreferenceController(Context context, String key) {
++        // super(context, key);
++    }
++}
+diff --git a/src/com/android/systemui/border/dagger/BorderModule.java b/src/com/android/systemui/border/dagger/BorderModule.java
+new file mode 100644
+index 0000000..be02227
+--- /dev/null
++++ b/src/com/android/systemui/border/dagger/BorderModule.java
+@@ -0,0 +1,34 @@
++/*
++ * Copyright (C) 2020 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.systemui.border.dagger;
++
++import com.android.systemui.border.BorderComponent;
++import com.android.systemui.border.BorderComponentImpl;
++import com.android.systemui.border.BorderUI;
++
++import dagger.Binds;
++import dagger.Module;
++import dagger.Provides;
++
++
++/** Dagger Module for code in the border package. */
++@Module
++public interface BorderModule {
++    /** */
++    @Binds
++    BorderComponent bindBorderComponent(BorderComponentImpl borderComponent);
++}
+diff --git a/src/com/android/systemui/dagger/ReferenceSystemUIModule.java b/src/com/android/systemui/dagger/ReferenceSystemUIModule.java
+index 4e48a52..074d1b8 100644
+--- a/src/com/android/systemui/dagger/ReferenceSystemUIModule.java
++++ b/src/com/android/systemui/dagger/ReferenceSystemUIModule.java
+@@ -27,6 +27,7 @@ import android.os.PowerManager;
+ import androidx.annotation.Nullable;
+ 
+ import com.android.keyguard.KeyguardViewController;
++import com.android.systemui.border.dagger.BorderModule;
+ import com.android.systemui.broadcast.BroadcastDispatcher;
+ import com.android.systemui.dagger.qualifiers.Background;
+ import com.android.systemui.dagger.qualifiers.Main;
+@@ -98,7 +99,8 @@ import dagger.Provides;
+         PowerModule.class,
+         QSModule.class,
+         StartCentralSurfacesModule.class,
+-        VolumeModule.class
++        VolumeModule.class,
++        BorderModule.class,
+ })
+ public abstract class ReferenceSystemUIModule {
+ 
+diff --git a/src/com/android/systemui/dagger/SystemUICoreStartableModule.kt b/src/com/android/systemui/dagger/SystemUICoreStartableModule.kt
+index a9f3408..b6709f8 100644
+--- a/src/com/android/systemui/dagger/SystemUICoreStartableModule.kt
++++ b/src/com/android/systemui/dagger/SystemUICoreStartableModule.kt
+@@ -24,6 +24,7 @@ import com.android.systemui.SliceBroadcastRelayHandler
+ import com.android.systemui.accessibility.SystemActions
+ import com.android.systemui.accessibility.WindowMagnification
+ import com.android.systemui.biometrics.AuthController
++import com.android.systemui.border.BorderUI
+ import com.android.systemui.clipboardoverlay.ClipboardListener
+ import com.android.systemui.dagger.qualifiers.PerUser
+ import com.android.systemui.globalactions.GlobalActionsComponent
+@@ -205,4 +206,10 @@ abstract class SystemUICoreStartableModule {
+     @IntoMap
+     @ClassKey(KeyguardLiftController::class)
+     abstract fun bindKeyguardLiftController(sysui: KeyguardLiftController): CoreStartable
++
++    /** Inject into BorderUI.  */
++    @Binds
++    @IntoMap
++    @ClassKey(BorderUI::class)
++    abstract fun bindBorderUI(sysui: BorderUI): CoreStartable
+ }
+\ No newline at end of file
+diff --git a/src/com/android/systemui/tv/TvSystemUIModule.java b/src/com/android/systemui/tv/TvSystemUIModule.java
+index 9a19d8d..8300538 100644
+--- a/src/com/android/systemui/tv/TvSystemUIModule.java
++++ b/src/com/android/systemui/tv/TvSystemUIModule.java
+@@ -27,6 +27,7 @@ import android.os.PowerManager;
+ import androidx.annotation.Nullable;
+ 
+ import com.android.keyguard.KeyguardViewController;
++import com.android.systemui.border.dagger.BorderModule;
+ import com.android.systemui.broadcast.BroadcastDispatcher;
+ import com.android.systemui.dagger.SysUISingleton;
+ import com.android.systemui.dagger.qualifiers.Background;
+@@ -90,6 +91,7 @@ import dagger.multibindings.IntoSet;
+             PowerModule.class,
+             QSModule.class,
+             VolumeModule.class,
++            BorderModule.class,
+         },
+         subcomponents = {
+         })
